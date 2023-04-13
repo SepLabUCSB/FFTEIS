@@ -546,6 +546,18 @@ class Recorder:
     
       
     def make_waveform(self):
+        '''
+        Generate a new waveform with "optimized" amplitudes.
+        
+        Uses the last recorded data set. Pull phase data from its csv file,
+        and V(w) = 1/|Z(w)|
+        
+        I.e. low impedance at high frequencies --> need to apply small AC
+             amplitude or else we'll get a ton of current out
+             high impedance at low frequencies --> need to apply larger AC
+             bias or else we'll get too small of currents
+        '''
+        
         if not self.ft:
             print('No previous scan. Record data then try again')
             return
@@ -775,7 +787,31 @@ class Recorder:
         
         
         
-        
+    def record_spectrum(self):
+        # record a single impedance spectrum. Not called directly by user
+        return
+    
+    
+    
+    def record_continuous(self, duration):
+        # record continuously for a period of time
+        return
+    
+    
+    def multiplex_continuous(self, duration):
+        # Record continuously for a period of time. After every spectrum,
+        # swap to the next electrode in the series
+        return
+    
+    def multiplex_titration(self, n_electrodes):
+        # cycle between each sensor, record each for the set duration.
+        # After finishing all electrodes, prompt the user to add target for
+        # the next point in the titration
+        return
+    
+    
+    
+    
 
 
     def record_signals(self, save=False, silent=True, plot_time_plot=False,
