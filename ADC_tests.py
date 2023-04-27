@@ -67,6 +67,7 @@ class DataTransformer():
         self.data  = []
         
         self.last_spec_count = 0
+        self.spec_time = 5
         
     
     def run(self):
@@ -81,11 +82,20 @@ class DataTransformer():
                 continue
             
             
-            if (self.master.ADC.spec_count != self.last_spec_count) and (self.master.ADC.spec_count != 0):
-                self.last_spec_count += 1
-                print(self.buffer.size())
-                data = self.buffer.get(self.buffer.size())
-                self.process(data)
+            if self.buffer.buffer:
+                first_timepoint = self.buffer.buffer[0][0]
+                last_timepoint  = self.buffer.buffer[-1][0]
+                
+                if abs(last_timepoint - first_timepoint)*1e-9 > self.spec_time:
+                    data = self.buffer.get(self.buffer.size())
+                    self.process(data)
+            
+            
+            # if (self.master.ADC.spec_count != self.last_spec_count) and (self.master.ADC.spec_count != 0):
+            #     self.last_spec_count += 1
+            #     print(self.buffer.size())
+            #     data = self.buffer.get(self.buffer.size())
+            #     self.process(data)
                 
             
             # if self.buffer.size() >= self.block_size:
@@ -96,8 +106,38 @@ class DataTransformer():
                 
     def process(self, data):
         
+        processed_data = [ [], [] ]
         
-        t, v, i = zip(*data)
+        first_timestamp = data[0][0]
+        last_timestamp  = data[-1][0]
+        
+        prev_timestamp = first_timestamp
+        t = []
+        for timestamp, count, response in data[1:]:
+            bResponse = bytearray(response)
+            Channel = struct.unpack("<"+"h"*count, bResponse)
+            times = np.linspace(prev_timestamp, timestamp, count)
+            
+            for j in range(count):
+                ch_idx = (count - j)%2
+                processed_data[ch_idx].append(Channel[j]*10/2**15)
+                
+                if j%2 == 0:
+                    t.append(times[j])
+        
+        v, i = processed_data
+        # t = np.linspace(first_timestamp, last_timestamp, len(v))
+        
+        # t, v, i = zip(*data)
+        t = np.array(t)
+        t -= t[0]
+        t *= 1e-9
+        
+        cutoff_id = max([i for i, time in enumerate(t) if time <= 1])
+        v = v[:cutoff_id]
+        i = i[:cutoff_id]
+        
+        
         
         sample_rate = (t[-1] - t[0])/len(t)
         print(1/sample_rate, len(t))
@@ -107,13 +147,14 @@ class DataTransformer():
         ft_v  = np.fft.rfft(v)[1:]
         ft_i  = np.fft.rfft(i)[1:]
         
+        
         # Correct frequencies due to variable ADC sample time
-        peaks = np.where(abs(ft_v) > 2*np.mean(abs(ft_v)))[0]
-        max_freq = freqs[max(peaks)]
+        # peaks = np.where(abs(ft_v) > 2*np.mean(abs(ft_v)))[0]
+        # max_freq = freqs[max(peaks)]
         # print(f'Max measured frequency: {max_freq}')
         
-        correction_factor = 1000/max_freq
-        freqs *= correction_factor
+        # correction_factor = 1000/max_freq
+        # freqs *= correction_factor
         
         
         self.data.append((freqs, ft_v))
@@ -183,7 +224,7 @@ class ADC():
             }
         
         self.setup()
-        self.set_sample_rate(3000)
+        self.set_sample_rate(10000)
         
     
     # Stop recording and close serial port
@@ -291,27 +332,35 @@ class ADC():
                 
                 data = [ [] for _ in range(n_ch)]
                 response = self.port.read(i - i%numofbyteperscan)
+                
                 count = (i - i%numofbyteperscan)//2
-                bResponse = bytearray(response)
-                Channel = struct.unpack("<"+"h"*count, bResponse)
                 
-                for j in range(count):
-                    ch_idx = (count - j)%2 # ! Only accomodates 2 channels
-                    data[ch_idx].append(Channel[j]*10/2**15)
+                self.buffer.append( (time.perf_counter_ns(),
+                                     count,
+                                     response) )
                 
-                this_timepoint = time.perf_counter_ns()
-                dt = (this_timepoint - self.last_timepoint) / len(data[0])
                 
-                ts = list(1e-9*np.arange(self.last_timepoint,
-                                          this_timepoint,
-                                          dt))
+                # count = (i - i%numofbyteperscan)//2
+                # bResponse = bytearray(response)
+                # Channel = struct.unpack("<"+"h"*count, bResponse)
+                
+                # for j in range(count):
+                #     ch_idx = (count - j)%2 # ! Only accomodates 2 channels
+                #     data[ch_idx].append(Channel[j]*10/2**15)
+                
+                # this_timepoint = time.perf_counter_ns()
+                # dt = (this_timepoint - self.last_timepoint) / len(data[0])
+                
+                # ts = list(1e-9*np.arange(self.last_timepoint,
+                #                           this_timepoint,
+                #                           dt))
                 
                             
-                for t, ch1, ch2 in zip(ts, data[0], data[1]):
-                    # print(t, ch1, ch2)
-                    self.buffer.append( (t, ch1, ch2) )
+                # for t, ch1, ch2 in zip(ts, data[0], data[1]):
+                #     # print(t, ch1, ch2)
+                #     self.buffer.append( (t, ch1, ch2) )
                     
-                self.last_timepoint = this_timepoint
+                # self.last_timepoint = this_timepoint
                     
                 
         print('done recording')
@@ -337,12 +386,13 @@ if __name__ == '__main__':
     fig, ax = plt.subplots(figsize=(5,5), dpi=150)
     data = transformer.data
     for (freqs, ft_v) in data:
-        peaks = np.where(abs(ft_v) > 20*np.mean(abs(ft_v)))[0]
+        # peaks = np.where(abs(ft_v) > 20*np.mean(abs(ft_v)))[0]
         # max_freq = freqs[max(peaks)]
         # factor = 1000/max_freq
         # freqs *= factor
-        freqs /= freqs[0]
-        ax.plot(freqs, abs(ft_v))
+        # freqs /= freqs[0]
+        # ax.plot(freqs, abs(ft_v))
+        ax.plot(abs(ft_v))
         # ax.axhline(20*np.mean(abs(ft_v)))
         # ax.axvline(max_freq)
     ax.set_xscale('log')
