@@ -3,6 +3,10 @@ from array import array
 
 import numpy as np
 import pyvisa
+
+from Buffer import ADCDataBuffer
+from DataProcessor import DataProcessor
+from funcs import run
     
 
 
@@ -48,6 +52,7 @@ class Oscilloscope():
     
     
     def get_recording_params(self):
+        i_range     = 1e-6 # TODO: get this from NOVA or GUI
         vdiv1       = float(self.inst.query('C1:VDIV?')[8:-2])
         voffset1    = float(self.inst.query('C1:OFST?')[8:-2])
         vdiv2       = float(self.inst.query('C2:VDIV?')[8:-2])
@@ -60,10 +65,11 @@ class Oscilloscope():
             'voffset1':voffset1,
             'voffset2':voffset2,
             'sara':sara,
-            'tdiv':tdiv,
-            'frame_time':14*tdiv,
+            'tdiv':round(tdiv, 6),
+            'frame_time':14*round(tdiv, 6),
+            'i_range': i_range,
             }      
-        return
+        return self.recording_params.copy()
         
     
     
@@ -71,13 +77,12 @@ class Oscilloscope():
         # Record one frame of data.
         # Returns raw voltages
         
-        if not hasattr(self, 'recording_params'):
-            self.get_recording_params()
+        recording_params = self.get_recording_params()
                 
-        vdiv1    = self.recording_params['vdiv1']
-        vdiv2    = self.recording_params['vdiv2']
-        voffset1 = self.recording_params['voffset1']
-        voffset2 = self.recording_params['voffset2']
+        vdiv1    = recording_params['vdiv1']
+        vdiv2    = recording_params['vdiv2']
+        voffset1 = recording_params['voffset1']
+        voffset2 = recording_params['voffset2']
         
         self.inst.write('TRMD AUTO')
         st = time.time()
@@ -101,6 +106,7 @@ class Oscilloscope():
         
         volts1 = adc1*(vdiv1/25) - voffset1
         volts2 = adc2*(vdiv2/25) - voffset2
+        self.buffer.append( (time.time(), recording_params, volts1, volts2) )
         return volts1, volts2
         
     
@@ -110,10 +116,11 @@ class Oscilloscope():
         # so that each trace is centered and fills the screen
         
         # Go to starting settings
-        self.inst.write('TDIV 20MS')
-        self.inst.write('C1:VDIV 10V')
+        self.inst.write('BUZZ OFF')     # Turns sound off
+        self.inst.write('TDIV 20MS')    # Faster scans for this
+        self.inst.write('C1:VDIV 10V')  # Start as zoomed out as possible
         self.inst.write('C2:VDIV 10V')
-        self.inst.write('C1:OFST 0')
+        self.inst.write('C1:OFST 0')    # Centered at 0V
         self.inst.write('C2:OFST 0')
         self.get_recording_params()
         
@@ -167,9 +174,10 @@ class Oscilloscope():
             self.get_recording_params() #update self.recording_params
             i += 1
             
-
-        self.inst.write('TDIV 100MS')
-        self.inst.write('TRMD AUTO')
+        self.inst.write('BUZZ ON')                  # Turn beep back on
+        self.inst.write(f'C1:VDIV {vdivs[v1_idx]}') # Makes it beep
+        self.inst.write('TDIV 100MS')               # Reset
+        self.inst.write('TRMD AUTO')                # So user can view waveform
         return
         
         
@@ -181,11 +189,17 @@ class Oscilloscope():
 if __name__ == '__main__':
     class thisMaster:
         def __init__(self):
+            self.STOP = False
             self.register = lambda x:0
     
-    scope  = Oscilloscope(thisMaster(), [])
+    buffer = ADCDataBuffer()
+    master = thisMaster()
+    scope  = Oscilloscope(master, buffer)
+    dataProcessor = DataProcessor(master, buffer)
     scope.initialize()
-    scope.autocenter_frames()
+    # scope.autocenter_frames()
+    run(dataProcessor.run)
+    scope.record_frame()
     
     
         

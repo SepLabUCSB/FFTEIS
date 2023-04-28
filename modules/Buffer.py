@@ -22,6 +22,8 @@ class ADCDataBuffer():
     
     def get(self, n):
         # Return first n points in buffer
+        if n == 1:
+            return self.buffer.popleft()
         return [self.buffer.popleft() for _ in range(n)]
     
     def clear(self):

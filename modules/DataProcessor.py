@@ -4,6 +4,9 @@ import numpy as np
 
 from DataStorage import ImpedanceSpectrum
 
+
+
+
 class DataProcessor():
     '''
     Monitors data stream from oscilloscope (in a separate thread). When a 
@@ -15,35 +18,25 @@ class DataProcessor():
         self.master = master
         self.master.register(self)
         self.buffer = ADCDataBuffer
-        
-        self.block_size = 10000
-        
+                
         self.data  = []
         
-        self.last_spec_count = 0
-        self.spec_time = 5
         
     
     
     def run(self):
-        st = time.perf_counter()
+        st = time.time()
         while True:
-            if time.perf_counter() - st > 10:
+            if time.time() - st > 10:
                 return
             if self.master.STOP:
                 return
             
-            if type(self.master.ADC.last_timepoint) != int:
-                continue
             
             
             if self.buffer.buffer:
-                first_timepoint = self.buffer.buffer[0][0]
-                last_timepoint  = self.buffer.buffer[-1][0]
-                
-                if abs(last_timepoint - first_timepoint)*1e-9 > self.spec_time:
-                    data = self.buffer.get(self.buffer.size())
-                    self.process(data)
+                data = self.buffer.get(1)
+                self.process(*data)
     
                     
     
@@ -60,48 +53,41 @@ class DataProcessor():
 
                 
                
-    def process(self, data):
+    def process(self, timestamp, recording_params, volts1, volts2):
+        '''
+        timestamp: time.time() output when frame was recorded
+        recording_params: dict, importantly includes sampling rate and tdiv
+        volts1: np.array of raw voltage output from CH 1 (voltage)
+        volts2: np.array of raw voltage output from CH 2 (current)
         
-        processed_data = [ [], [] ]
+        We need to use the current range (set in NOVA) to convert volts2 back
+        into current. Then Fourier transform both and filter to only keep
+        the frequencies we applied.      
+        '''
         
-        first_timestamp = data[0][0]
-        last_timestamp  = data[-1][0]
         
-        prev_timestamp = first_timestamp
-        t = []
-        for timestamp, count, response in data[1:]:
-            bResponse = bytearray(response)
-            Channel = struct.unpack("<"+"h"*count, bResponse)
-            times = np.linspace(prev_timestamp, timestamp, count)
-            
-            for j in range(count):
-                ch_idx = (count - j)%2
-                processed_data[ch_idx].append(Channel[j]*10/2**15)
-                
-                if j%2 == 0:
-                    t.append(times[j])
+        sample_rate = recording_params['sara']
+        total_time  = recording_params['frame_time']
+        i_range     = recording_params['i_range']
         
-        v, i = processed_data
-        # t = np.linspace(first_timestamp, last_timestamp, len(v))
         
-        # t, v, i = zip(*data)
-        t = np.array(t)
-        t -= t[0]
-        t *= 1e-9
+        t = np.linspace(0, total_time, int(sample_rate*total_time))
+        v = volts1
+        i = volts2/i_range
         
-        cutoff_id = max([i for i, time in enumerate(t) if time <= 1])
+        
+        # TODO: adapt for spectra that don't end at 1Hz
+        cutoff_time = 1
+        cutoff_id   = max([i for i, ti in enumerate(t) if ti <= cutoff_time])
+        
+        t = t[:cutoff_id]
         v = v[:cutoff_id]
         i = i[:cutoff_id]
         
         
-        
-        sample_rate = (t[-1] - t[0])/len(t)
-        print(1/sample_rate, len(t))
-        
-        # sample_rate = 10000
         freqs = sample_rate*np.fft.rfftfreq(len(v))[1:]
-        ft_v  = np.fft.rfft(v)[1:]
-        ft_i  = np.fft.rfft(i)[1:]
+        ft_v  =             np.fft.rfft(v)[1:]
+        ft_i  =             np.fft.rfft(i)[1:]
                 
         
-        self.data.append((freqs, ft_v))
+        self.data.append( (freqs, ft_v, ft_i) )
