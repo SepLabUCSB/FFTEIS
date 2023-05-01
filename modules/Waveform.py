@@ -1,10 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
-def nearest(value, array):
-    array = np.asarray(array)
-    idx = (np.abs(array - value)).argmin()
-    return idx, array[idx]
+from funcs import nearest
 
 
 def generate_waveform(f0, f1, n_pts):
@@ -28,10 +26,9 @@ def generate_waveform(f0, f1, n_pts):
     base_freq = f0
     valid_freqs = [n*base_freq for n in range(1, 1 + int(f1//base_freq))]
     
-    
     for i in range(n_pts):
         f = freqs[i]
-        idx, f = nearest(f, valid_freqs) # Find closest interger multiple
+        idx, f = nearest(valid_freqs, f) # Find closest interger multiple
         
         while ( (f in freqs[:i]) 
                or (f%60 == 0)                       # 60 Hz harmonics
@@ -45,6 +42,10 @@ def generate_waveform(f0, f1, n_pts):
         freqs[i] = f
     
     phases = [np.random.randint(-180, 180) for _ in freqs]
+    
+    # Make sure no two sine waves have the same phase
+    while len(set(phases)) != len(phases):
+        phases = [np.random.randint(-180, 180) for _ in freqs]
         
     return freqs, phases
         
@@ -78,9 +79,6 @@ def make_time_domain(freqs, phases, mVpp):
         
 
 
-def make_Waveform(f_min, f_max, n_pts):
-    freqs, phases = generate_waveform(f_min, f_max, n_pts)
-    return Waveform(freqs, phases, np.ones(len(freqs)) )
 
 
 class Waveform():
@@ -90,7 +88,31 @@ class Waveform():
         self.amps   = amps
 
 
-    def correct_from_spectrum(self, ImpedanceSpectrum):
+    def generate(self, f_min, f_max, n_pts):
+        self.freqs, self.phases = generate_waveform(f_min, f_max, n_pts)
+        
+    
+    def from_csv(self, file):
+        df = pd.read_csv(file)
+        self.freqs  = df['freqs']
+        self.phases = df['phases']
+        self.amps   = df['amps']
+        return
+    
+    
+    def to_csv(self, file):
+        assert type(self.freqs) in (list, np.ndarray), 'Invalid frequencies'
+        assert type(self.phases) in (list, np.ndarray), 'Invalid phases'
+        if type(self.amps) not in (list, np.ndarray):
+            self.amps = np.ones(len(self.freqs))
+            
+        df = pd.DataFrame({'freqs': self.freqs,
+                           'phases': self.phases,
+                           'amps': self.amps})
+        df.to_csv(file, index=False)
+    
+
+    def optimize_from_spectrum(self, ImpedanceSpectrum):
         assert self.freqs == ImpedanceSpectrum.freqs, 'Correction input frequencies do not match Waveform frequencies'
         Z = np.asarray(ImpedanceSpectrum.Z)
         amp_factor = 1/np.absolute(Z)
@@ -117,14 +139,27 @@ class Waveform():
         y = np.zeros(len(x))
         
         for i, freq in enumerate(self.freqs):
-            idx, _ = nearest(freq, x)
+            idx, _ = nearest(x, freq)
             y[idx] = self.amps[i]
         
         ax.plot(x, y)
         ax.set_xscale('log')
         ax.set_xlabel('Frequency/ Hz')
         ax.set_ylabel('Amplitude/ a.u.')
-        
+ 
+       
+ 
+
+if __name__ == '__main__':
+    import os
+    csv_dir = r'C:/Users/BRoehrich/Desktop/git/FFTEIS/waveforms'
+    wf = Waveform()
+    wf.generate(10, 1000, 14)
+    out_csv = os.path.join(csv_dir, 'test.csv')
+    wf.to_csv(out_csv)
+    # wf.from_csv(out_csv)
+    fig, ax = plt.subplots()
+    wf.plot_to_ax(ax)
 
 
 

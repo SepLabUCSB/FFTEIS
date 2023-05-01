@@ -21,8 +21,7 @@ class DataProcessor():
                 
         self.data  = []
         
-        
-    
+
     
     def run(self):
         st = time.time()

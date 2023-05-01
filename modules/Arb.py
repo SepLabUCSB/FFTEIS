@@ -3,7 +3,7 @@ import time
 import numpy as np
 import pyvisa
 
-from Waveform import make_Waveform, Waveform
+from Waveform import Waveform
 
 
 def to_int16(signal):
@@ -114,15 +114,16 @@ class Arb():
         self.turn_on()
         
         
-        
     def set_amplitude(self, Vpp):
         # Sets peak-to-peak amplitude of waveform
         self.inst.write(f':SOURCE1:VOLTAGE {Vpp}VPP')
         wait(self.inst)
         
+        
     def turn_on(self):
         self.inst.write(':OUTPUT1 ON;')
         wait(self.inst)
+    
     
     def turn_off(self):
         self.inst.write(':OUTPUT1 OFF;')
@@ -140,7 +141,8 @@ if __name__ == '__main__':
             
     master = thisMaster()
     arb = Arb(master)
-    wf = make_Waveform(1,1000,15)
+    wf = Waveform()
+    wf.generate(1, 1000, 15)
     # fig, ax = plt.subplots()
     arb.send_waveform(wf, 0.1)
     

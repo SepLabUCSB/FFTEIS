@@ -1,9 +1,24 @@
+# Standard lib
 import time
 import os
+import sys
+import traceback
+from tkinter import *
+from tkinter.ttk import *
 
+# Requirements
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+
+# Local modules
+# from modules import *
+
+default_stdout = sys.stdout
+default_stdin  = sys.stdin
+default_stderr = sys.stderr
+
+matplotlib.use('TkAgg')
 
 
 '''
@@ -99,6 +114,27 @@ class GUI():
 
 
 
+if __name__ == '__main__':
+    
+    master = MasterModule()
+    
+    root = Tk()
+    try:
+        gui = GUI(root, master)
+        
+        root.mainloop()
+        root.quit()
+        gui.willStop = True
+        
+    except Exception:
+        print(traceback.format_exc())
+    
+    sys.stdout = default_stdout
+    sys.stdin  = default_stdin
+    sys.stderr = default_stderr
+    
+    
+    
 
 
 
