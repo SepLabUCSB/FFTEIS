@@ -12,10 +12,18 @@ class Experiment():
         self.spectra  = []
         self.i        = 0       # Counter for # of spectra
         
+        self.waveform = None
+        self.correction_factors = None
+        
     
     def append_spectrum(self, spectrum):
         self.spectra.append(spectrum)
         self.i = len(self.spectra)
+        self.specta[self.i].save()
+        
+        
+    def set_waveform(self, Waveform):
+        self.waveform = Waveform
         
     
     

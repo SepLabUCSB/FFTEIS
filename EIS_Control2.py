@@ -20,12 +20,16 @@ class MasterModule():
         self.STOP = False
         self.modules = [self]
         
+        self.experiment = None
+      
+        
     def register(self, module):
         '''
         Register a submodule to master
         '''
         setattr(self, module.__class__.__name__, module)
         self.modules.append(getattr(self, module.__class__.__name__))
+       
         
     def run(self):
         '''
@@ -41,7 +45,12 @@ class MasterModule():
                     self.endState()
                     return
             time.sleep(0.1)
+    
+    
+    def set_experiment(self, Experiment):
+        self.experiment = Experiment
         
+    
     def endState(self):
         '''
         Close ports for modules which need it and stop others nicely
