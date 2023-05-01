@@ -106,7 +106,8 @@ class Arb():
         
     
     def initialize(self):
-        self.inst = pyvisa.ResourceManager().open_resource(self._name)
+        if self._name in pyvisa.ResourceManager().list_resources():
+            self.inst = pyvisa.ResourceManager().open_resource(self._name)
         
     
     def send_waveform(self, Waveform, Vpp):

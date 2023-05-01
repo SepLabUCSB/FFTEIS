@@ -27,7 +27,7 @@ class Experiment():
     def append_spectrum(self, spectrum):
         self.spectra.append(spectrum)
         self.i = len(self.spectra)
-        self.specta[self.i].save()
+        self.spectra[self.i].save()
         
         
     def set_waveform(self, Waveform):

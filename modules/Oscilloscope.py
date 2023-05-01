@@ -26,6 +26,7 @@ class Oscilloscope():
         
         self.buffer = ADCDataBuffer
         
+        self.inst = None
         self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDED5R0471::INSTR'
         self._is_recording = False
         
@@ -35,15 +36,18 @@ class Oscilloscope():
     
     def write(self, cmd):
         # Send command to scope and wait for 
+        if not self.inst:
+            return
         self.inst.write(cmd)
         time.sleep(0.2)
     
     
     
     def initialize(self):
-        self._is_recording = True
-        self.inst = pyvisa.ResourceManager().open_resource(self._name)
+        if self._name in pyvisa.ResourceManager().list_resources():
+            self.inst = pyvisa.ResourceManager().open_resource(self._name)
         
+        self._is_recording = True
         # Write default settings
         # self.inst.write('*RST')                 # Reset
         # time.sleep(4)
@@ -82,7 +86,7 @@ class Oscilloscope():
         
     
     
-    def record_frame(self, timeout = 10):
+    def record_frame(self, timeout = 10, add_to_buffer=True):
         # Record one frame of data.
         # Returns raw voltages
         

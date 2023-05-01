@@ -1,5 +1,6 @@
 # Standard lib
 import time
+from datetime import datetime
 import os
 import sys
 import traceback
@@ -42,6 +43,11 @@ Everything runs in main thread except:
 TODO:
 - make new waveform interface    
 
+
+Test:
+    -reference spectrum
+    -reference correction
+
 '''
 
 
@@ -53,6 +59,7 @@ class MasterModule():
         self.modules = [self]
         
         self.experiment = Experiment()
+        self.waveform   = Waveform()
       
         
     def register(self, module):
@@ -269,6 +276,7 @@ class GUI():
         
         # self.master.experiment.set_waveform(wf) # don't want to overwrite waveform from last experiment
         self.master.Arb.send_waveform(wf, Vpp)
+        self.master.waveform = wf
         return
     
     
@@ -278,10 +286,56 @@ class GUI():
     
     
     def record_reference(self):
+        
+        if self.ref_correction_bool.get():
+            print('Uncheck "Apply Reference Correction" before\n'+
+                  'recording a reference spectrum!\n')  
+            return
+        
+        R = tk.simpledialog.askstring('Calibration', 'Resistance:')
+        if not R:
+            return
+        
+        R = R.replace('k', '000')
+        R = R.replace('M', '000000')
+        try:
+            R = float(R)
+        except:
+            print('Invalid resistance entry!')
+            return
+        
+        self.master.set_experiment(Experiment(name='reference'))
+        self.master.experiment.set_waveform(self.master.waveform)
+        
+        # Record 5 spectra
+        for _ in range(5):
+            self.master.Oscilloscope.record_frame()
+        spectra = self.master.spectra
+        
+        # Average them together
+        Zs = np.array([np.array(spec.Z) for spec in spectra])
+        Z  = np.mean(Zs, axis=0)
+        
+        phases = np.array([np.array(spec.phase) for spec in spectra])
+        phase  = np.mean(phases, axis=0)
+        
+        # Calculate correction factors and save locally
+        Z_correction     = Z/R
+        phase_correction = phase
+        
+        df = pd.DataFrame({'freqs': spectra[0].freqs,
+                           'Z_factor': Z_correction,
+                           'phase_factor': phase_correction})
+        
+        date = datetime.now().strf('%Y-%m-%d')
+        out_file = 'waveforms/reference/{date}-{name}-{R}Ohm.csv'
+        
+        df.to_csv(out_file, index=False)        
         return
     
     
     def record_single(self):
+        self.master.set_experiment(Experiment())
         self.master.Oscilloscope.record_frame()
         return
     

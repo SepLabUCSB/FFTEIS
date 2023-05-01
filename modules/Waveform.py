@@ -94,7 +94,24 @@ class Waveform():
         self.freqs  = freqs
         self.phases = phases
         self.amps   = amps
-
+    
+    
+    def name(self):
+        assert type(self.freqs) in (list, np.ndarray), 'Invalid frequencies'
+        assert type(self.phases) in (list, np.ndarray), 'Invalid phases'
+        opt = '_opt'
+        if type(self.amps) not in (list, np.ndarray):
+            opt = ''
+            self.amps = np.ones(len(self.freqs))
+        if all([v == 1 for v in self.amps]):
+            opt = ''
+        
+        high = max(self.freqs)
+        low  = min(self.freqs)
+        n    = len(self.freqs)
+        
+        return f'{high}_{low}_{n}{opt}'
+    
 
     def generate(self, f_min, f_max, n_pts):
         self.freqs, self.phases = generate_waveform(f_min, f_max, n_pts)
@@ -109,21 +126,11 @@ class Waveform():
     
     
     def to_csv(self):
-        
-        assert type(self.freqs) in (list, np.ndarray), 'Invalid frequencies'
-        assert type(self.phases) in (list, np.ndarray), 'Invalid phases'
-        opt = '_opt'
-        if type(self.amps) not in (list, np.ndarray):
-            opt = ''
-            self.amps = np.ones(len(self.freqs))
-            
+          
         path = waveform_dir
         
-        high = max(self.freqs)
-        low  = min(self.freqs)
-        n    = len(self.freqs)
-        
-        name = f'{high}_{low}_{n}{opt}.csv'    
+        name = self.name()
+        name += '.csv'
         file = os.path.join(path, name)
         
         df = pd.DataFrame({'freqs': self.freqs,
