@@ -197,7 +197,7 @@ if __name__ == '__main__':
     scope  = Oscilloscope(master, buffer)
     dataProcessor = DataProcessor(master, buffer)
     scope.initialize()
-    # scope.autocenter_frames()
+    scope.autocenter_frames()
     run(dataProcessor.run)
     scope.record_frame()
     

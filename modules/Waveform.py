@@ -103,7 +103,7 @@ class Waveform():
             print('frequencies or phases invalid')
             return
         
-        if not self.amps:
+        if type(self.amps) not in (list, np.ndarray):
             self.amps = np.ones(len(self.freqs))
         
         v = make_time_domain(self.freqs, self.phases, self.amps)
@@ -112,7 +112,7 @@ class Waveform():
     
     def plot_to_ax(self, ax):
         x = np.arange(min(self.freqs)/5, 
-                      max(self.freqs) + min(self.freqs), 
+                      5*(max(self.freqs) + min(self.freqs)), 
                       min(self.freqs)/10)
         y = np.zeros(len(x))
         

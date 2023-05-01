@@ -3,6 +3,8 @@ import time
 import numpy as np
 import pyvisa
 
+from Waveform import make_Waveform, Waveform
+
 
 def to_int16(signal):
     signal = np.array(signal)
@@ -78,35 +80,70 @@ def apply_waveform(inst, s, Vpp=1):
     inst.write(':SOURCE1:APPL:SEQ')
     inst.write(':SOURCE1:FUNC:SEQ:FILT INSERT')
     send_bytes(inst, s, channel=1)
-    inst.write(':SOURCE1:VOLTAGE %sVPP'%(Vpp))
+    # inst.write(':SOURCE1:VOLTAGE %sVPP'%(Vpp))
     inst.write(':SOURCE1:FUNC:SEQ:SRAT 100000')
     inst.write(':SOURCE1:FUNC:SEQ:EDGETime 0.000005')
-    inst.write(':SOURC1s:FUNC:')
-    wait(inst)
-    inst.write(':OUTPUT1 ON;')
+    inst.write(':SOURCE1:FUNC:')
     wait(inst)
     print('Waveform loaded!\n')
     inst.clear()
     
 
 class Arb():
+    '''
+    Class to communicate with Rigol DG812 arbitrary waveform generator
+    '''
     def __init__(self, master):
         self.willStop = True
         self.master = master
         self.master.register(self)
         
-        self._name = 'USB0::'  # !!!TODO 
+        self._name = 'USB0::0x1AB1::0x0643::DG8A232302748::INSTR'
+        self.initialize()
         
     
     def initialize(self):
         self.inst = pyvisa.ResourceManager().open_resource(self._name)
         
     
-    def send_waveform(self, Waveform):
+    def send_waveform(self, Waveform, Vpp):
         v = Waveform.time_domain()
-        if v:
-            apply_waveform(self.inst, v)
+        self.turn_off()
+        apply_waveform(self.inst, v)
+        self.set_amplitude(Vpp)
+        self.turn_on()
+        
+        
+        
+    def set_amplitude(self, Vpp):
+        # Sets peak-to-peak amplitude of waveform
+        self.inst.write(f':SOURCE1:VOLTAGE {Vpp}VPP')
+        wait(self.inst)
+        
+    def turn_on(self):
+        self.inst.write(':OUTPUT1 ON;')
+        wait(self.inst)
+    
+    def turn_off(self):
+        self.inst.write(':OUTPUT1 OFF;')
+        wait(self.inst)
 
+
+
+
+if __name__ == '__main__':
+    import matplotlib.pyplot as plt
+    class thisMaster:
+        def __init__(self):
+            self.STOP = False
+            self.register = lambda x:0
+            
+    master = thisMaster()
+    arb = Arb(master)
+    wf = make_Waveform(1,1000,15)
+    # fig, ax = plt.subplots()
+    arb.send_waveform(wf, 0.1)
+    
 
 
 
