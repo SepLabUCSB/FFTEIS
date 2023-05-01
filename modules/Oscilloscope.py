@@ -4,10 +4,14 @@ from array import array
 import numpy as np
 import pyvisa
 
-from Buffer import ADCDataBuffer
-from DataProcessor import DataProcessor
-from funcs import run
-    
+if __name__ == '__main__':
+    from Buffer import ADCDataBuffer
+    from DataProcessor import DataProcessor
+    from funcs import run
+else:
+    from .Buffer import ADCDataBuffer
+    from .DataProcessor import DataProcessor
+    from .funcs import run    
 
 
 class Oscilloscope():
@@ -25,6 +29,8 @@ class Oscilloscope():
         self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDED5R0471::INSTR'
         self._is_recording = False
         
+        run(self.initialize)
+        
     
     
     def write(self, cmd):
@@ -35,6 +41,7 @@ class Oscilloscope():
     
     
     def initialize(self):
+        self._is_recording = True
         self.inst = pyvisa.ResourceManager().open_resource(self._name)
         
         # Write default settings
@@ -48,7 +55,8 @@ class Oscilloscope():
         
         self.write('TRSE EDGE,SR,EX,HT,OFF')    # Set up triggering
         
-        self.write('TRMD STOP')
+        # self.write('TRMD STOP')
+        self._is_recording = False
         
     
     
@@ -159,6 +167,7 @@ class Oscilloscope():
                 v1_idx -= 1
             else:
                 V1_DONE = True
+            
                 
             if not (max(v2) > (-voffset2 + 1.5*vdiv2) or
                     min(v2) < (-voffset2 - 1.5*vdiv2) or
@@ -166,6 +175,15 @@ class Oscilloscope():
                 v2_idx -= 1
             else:
                 V2_DONE = True
+                
+                
+            # Step down faster if we're far off
+            if (max(v1) < (-voffset1 + 0.2*vdiv1) and
+                min(v1) > (-voffset1 - 0.2*vdiv1)):
+                v1_idx -= 1
+            if (max(v2) < (-voffset2 + 0.2*vdiv2) and
+                min(v2) > (-voffset2 - 0.2*vdiv2)):
+                v1_idx -= 1
             
             
             if (V1_DONE and V2_DONE):
