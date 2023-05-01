@@ -328,8 +328,7 @@ class GUI():
                            'phase_factor': phase_correction})
         
         date = datetime.now().strf('%Y-%m-%d')
-        out_file = 'waveforms/reference/{date}-{name}-{R}Ohm.csv'
-        
+        out_file = f'waveforms/reference/{date}-{name}-{R}Ohm.csv'
         df.to_csv(out_file, index=False)        
         return
     
