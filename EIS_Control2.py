@@ -87,11 +87,7 @@ class MasterModule():
                     self.endState()
                     return
             time.sleep(0.1)
-    
-    
-    def set_experiment(self, Experiment):
-        self.experiment = Experiment
-        
+            
     
     def endState(self):
         '''
@@ -100,6 +96,9 @@ class MasterModule():
         for module in self.modules:
             if hasattr(module, 'stop'):
                 module.stop()
+                
+    
+    
 
  
 class PrintLogger(): 
@@ -129,6 +128,7 @@ class GUI():
         
         self.root = root
         self.params = {}
+        self.last_spectrum = None
         
         root.title('FFT-EIS Controller')
         root.attributes('-topmost', 1)
@@ -243,7 +243,25 @@ class GUI():
         Button(topright, text='Create Optimized Waveform', command=
                self.create_optimized_waveform).grid(column=0, row=3,
                                                     columnspan=2, sticky=(W,E))
+    
+                                                    
+    def update_plot(self):
         
+        if self.master.experiment.spectra[-1] != self.last_spectrum:
+            self.last_spectrum = self.master.experiment.spectra[-1]
+            freqs = self.last_spectrum.freqs
+            Z     = self.last_spectrum.Z
+            phase = self.last_spectrum.phase
+            self.ax.cla()
+            self.ax.plot(freqs, phase)
+            self.ax2.plot(freqs, abs(Z))
+            self.ax.set_xlabel('Frequency/ Hz')
+            self.ax.set_ylabel(r'Phase/ $\degree$')
+            self.ax2.set_ylabel(r'|Z|/ M$\Omega')
+        
+        # Schedule next check
+        self.root.after(100, self.update_plot)
+        return
     
                                                     
     def show_waveform(self, waveform):
@@ -277,6 +295,7 @@ class GUI():
         # self.master.experiment.set_waveform(wf) # don't want to overwrite waveform from last experiment
         self.master.Arb.send_waveform(wf, Vpp)
         self.master.waveform = wf
+        self.master.DataProcessor.load_correction_factors()
         return
     
     
@@ -330,6 +349,9 @@ class GUI():
         date = datetime.now().strf('%Y-%m-%d')
         out_file = f'waveforms/reference/{date}-{name}-{R}Ohm.csv'
         df.to_csv(out_file, index=False)        
+        
+        # Update DataProcessor with new reference
+        self.master.DataProcessor.load_correction_factors()        
         return
     
     
@@ -403,6 +425,7 @@ if __name__ == '__main__':
     try:
         gui = GUI(root, master)
         
+        root.after(1000, gui.update_plot)
         root.mainloop()
         root.quit()
         gui.willStop = True

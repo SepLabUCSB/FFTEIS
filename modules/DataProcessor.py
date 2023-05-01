@@ -1,6 +1,8 @@
 import time
+import os
 
 import numpy as np
+import pandas as pd
 
 if __name__ == '__main__':
     from DataStorage import ImpedanceSpectrum
@@ -32,9 +34,6 @@ class DataProcessor():
                 return
             if self.master.STOP:
                 return
-            
-            
-            
             if self.buffer.buffer:
                 data = self.buffer.get(1)
                 self.process(*data)
@@ -92,3 +91,30 @@ class DataProcessor():
                 
         
         self.data.append( (freqs, ft_v, ft_i) )
+    
+    
+    def load_correction_factors(self):
+        # Get applied frequencies and correction factors
+        wf = self.master.waveform
+        self.applied_freqs = wf.freqs
+        
+        wf_name = wf.name()
+        correction_files = [f for f in os.listdir('waveforms/reference')
+                            if wf_name in f]
+        if len(correction_files) == 0:
+            self.Z_factors     = np.ones(len(self.applied_freqs))
+            self.phase_factors = np.zeros(len(self.applied_freqs))
+            return
+        
+        file = correction_files[-1] # Most recent date
+        df = pd.read_csv(file)
+        self.Z_factors     = df['Z_factor'].to_numpy()
+        self.phase_factors = df['phase_factor'].to_numpy()
+        return
+        
+        
+        
+        
+        
+        
+        
