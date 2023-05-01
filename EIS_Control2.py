@@ -16,7 +16,12 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pyvisa
 
 # Local modules
-# from modules import *
+from modules.Arb import Arb
+from modules.Buffer import ADCDataBuffer
+from modules.DataProcessor import DataProcessor
+from modules.DataStorage import Experiment, ImpedanceSpectrum
+from modules.Oscilloscope import Oscilloscope
+from modules.Waveform import Waveform
 
 default_stdout = sys.stdout
 default_stdin  = sys.stdin
@@ -32,6 +37,11 @@ DataQ ADC has aliasing issues due to imprecise timing and sampling rates
 
 Everything runs in main thread except:
     Oscilloscope.record_frame()
+    
+
+TODO:
+- make new waveform interface    
+
 '''
 
 
@@ -42,12 +52,15 @@ class MasterModule():
         self.STOP = False
         self.modules = [self]
         
-        self.experiment = None
+        self.experiment = Experiment()
       
         
     def register(self, module):
         '''
         Register a submodule to master
+        
+        i.e. ADC --> master.ADC
+             master.modules = [ADC, ...]
         '''
         setattr(self, module.__class__.__name__, module)
         self.modules.append(getattr(self, module.__class__.__name__))
@@ -159,15 +172,19 @@ class GUI():
         Label(topleft, text='Func. Gen: ').grid(column=0, row=1, sticky=(E))
         Label(topleft, text='Connected' if arb_connected else 'NOT CONNECTED').grid(
             column=1, row=1)
+        Button(topleft, text='Setup Oscilloscope', command=self.setup_scope).grid(
+            column=2, row=1, sticky=(E))
         
         # Waveform selection dropdown
         # !!!TODO: propagate default waveform options from waveforms/ 
+        waveforms = [f.replace('.csv', '') for f in os.listdir('waveforms')]
         Label(topleft, text='Waveform: ').grid(column=0, row=2, sticky=(E))
-        self.waveformselection = StringVar(topleft)
-        OptionMenu(topleft, self.waveformselection, '', ['', 'waveform2']).grid(
+        self.waveform_selection = StringVar(topleft)
+        OptionMenu(topleft, self.waveform_selection, waveforms[0], *waveforms,
+                   command=self.show_waveform).grid(
             column=1, row=2, sticky=(E,W))
         Button(topleft, text='Apply Waveform', command=self.apply_waveform).grid(
-            column=2, row=2, sticky=(W))
+            column=2, row=2, sticky=(E,W))
         
         
         # Record... Buttons
@@ -176,7 +193,7 @@ class GUI():
         Button(topleft, text='Record Spectrum', command=self.record_single).grid(
             column=1, row=3, sticky=(W,E))
         Button(topleft, text='Record for...', command=self.record_duration).grid(
-            column=2, row=3, sticky=(W))
+            column=2, row=3, sticky=(E,W))
         
         
         # Multiplexing buttons
@@ -185,7 +202,7 @@ class GUI():
         Button(topleft, text='Titration', command=self.multiplex_titration).grid(
             column=1, row=4, sticky=(W,E))
         Button(topleft, text='In-vivo', command=self.multiplex_invivo).grid(
-            column=2, row=4, sticky=(W))
+            column=2, row=4, sticky=(E,W))
         
         
         
@@ -220,10 +237,43 @@ class GUI():
                self.create_optimized_waveform).grid(column=0, row=3,
                                                     columnspan=2, sticky=(W,E))
         
-        
-        
+    
+                                                    
+    def show_waveform(self, waveform):
+        # Triggered by selecting a new waveform from the dropdown. Show its
+        # frequency domain representation in the display
+        waveform_file = f'waveforms/{waveform}.csv'
+        wf = Waveform()
+        wf.from_csv(waveform_file)
+        self.ax.cla()
+        wf.plot_to_ax(self.ax)
+        self.fig.tight_layout()
+        self.canvas.draw_idle()
+        return
+    
         
     def apply_waveform(self):
+        # Send waveform data to arbitrary waveform generator. 
+        # TODO: Also save the Waveform object to the current Experiment
+        waveform = self.waveform_selection.get()
+        mVpp     = self.amplitude_input.get('1.0', 'end')
+        
+        try:
+            Vpp = 2*float(mVpp)/1000 # Arb output gets divided by 2 on Autolab input
+        except:
+            print('Invalid amplitude input! Check for erronous letters or spaces')
+        
+        waveform_file = f'waveforms/{waveform}.csv'
+        wf = Waveform()
+        wf.from_csv(waveform_file)
+        
+        # self.master.experiment.set_waveform(wf) # don't want to overwrite waveform from last experiment
+        self.master.Arb.send_waveform(wf, Vpp)
+        return
+    
+    
+    def setup_scope(self):
+        self.master.Oscilloscope.autocenter_frames()
         return
     
     
@@ -232,6 +282,7 @@ class GUI():
     
     
     def record_single(self):
+        self.master.Oscilloscope.record_frame()
         return
     
     
@@ -286,6 +337,14 @@ class GUI():
 if __name__ == '__main__':
     
     master = MasterModule()
+    
+    # Load submodules
+    arb             = Arb(master)
+    buffer          = ADCDataBuffer()
+    dataProcessor   = DataProcessor(master, buffer)
+    oscilloscope    = Oscilloscope(master, buffer)
+        
+        
     
     root = Tk()
     try:

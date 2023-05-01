@@ -2,8 +2,10 @@ import time
 
 import numpy as np
 
-from DataStorage import ImpedanceSpectrum
-
+if __name__ == '__main__':
+    from DataStorage import ImpedanceSpectrum
+else:
+    from .DataStorage import ImpedanceSpectrum
 
 
 

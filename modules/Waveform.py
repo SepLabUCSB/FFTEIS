@@ -2,7 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from funcs import nearest
+if __name__ == '__main__':
+    from funcs import nearest
+else:
+    from .funcs import nearest
 
 
 # !!! TODO: change this
@@ -161,8 +164,10 @@ class Waveform():
         
         ax.plot(x, y)
         ax.set_xscale('log')
+        ax.set_xticks([1,10,100,1000,10000])
+        ax.set_xlim(min(x), max(x))
         ax.set_xlabel('Frequency/ Hz')
-        ax.set_ylabel('Amplitude/ a.u.')
+        ax.set_ylabel('Amplitude')
  
        
  

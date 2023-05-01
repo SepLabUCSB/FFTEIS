@@ -3,7 +3,10 @@ import time
 import numpy as np
 import pyvisa
 
-from Waveform import Waveform
+if __name__ == '__main__':
+    from Waveform import Waveform
+else:
+    from .Waveform import Waveform
 
 
 def to_int16(signal):

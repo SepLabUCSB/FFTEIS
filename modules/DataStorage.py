@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 import os
 
 import numpy as np
@@ -7,7 +8,14 @@ import pandas as pd
 
 class Experiment():
     
-    def __init__(self, path):
+    def __init__(self, name=None):
+        path = os.path.expanduser('~\Desktop\EIS Output')
+        path = os.path.join(path, datetime.now().strftime('%Y-%m-%d'))
+        if name:
+            path = os.path.join(path, name)
+        else:
+            path = os.path.join(path, datetime.now().strftime('%H-%M-%S'))
+            
         self.path     = path    # Save path
         self.spectra  = []
         self.i        = 0       # Counter for # of spectra
@@ -52,6 +60,7 @@ class ImpedanceSpectrum():
         Save this spectrum to its Experiment's save path
         '''
         path = self.experiment.path
+        os.makedirs(path, exist_ok=True)
         i    = self.experiment.i
         
         if not name:
