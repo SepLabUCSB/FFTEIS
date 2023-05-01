@@ -23,6 +23,7 @@ class Oscilloscope():
         self.buffer = ADCDataBuffer
         
         self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDED5R0471::INSTR'
+        self._is_recording = False
         
     
     
@@ -77,6 +78,10 @@ class Oscilloscope():
         # Record one frame of data.
         # Returns raw voltages
         
+        if self._is_recording:
+            return
+        self._is_recording = True
+        
         recording_params = self.get_recording_params()
                 
         vdiv1    = recording_params['vdiv1']
@@ -107,6 +112,7 @@ class Oscilloscope():
         volts1 = adc1*(vdiv1/25) - voffset1
         volts2 = adc2*(vdiv2/25) - voffset2
         self.buffer.append( (time.time(), recording_params, volts1, volts2) )
+        self._is_recording = False
         return volts1, volts2
         
     

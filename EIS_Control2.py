@@ -5,6 +5,7 @@ import sys
 import traceback
 from tkinter import *
 from tkinter.ttk import *
+import tkinter as tk
 
 # Requirements
 import pandas as pd
@@ -12,6 +13,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import pyvisa
 
 # Local modules
 # from modules import *
@@ -27,6 +29,9 @@ matplotlib.use('TkAgg')
 Use oscilloscope but rewrite with threading
 
 DataQ ADC has aliasing issues due to imprecise timing and sampling rates
+
+Everything runs in main thread except:
+    Oscilloscope.record_frame()
 '''
 
 
@@ -136,6 +141,116 @@ class GUI():
         sys.stdout = pl
         
         
+        ### TOP LEFT: Control buttons ###
+        
+        # Check if SDS1202X-E and DG812 are connected and on
+        scope_connected = False
+        arb_connected   = False
+        if any(['SDS1' in rsc for rsc 
+                in pyvisa.ResourceManager().list_resources()]):
+            scope_connected = True
+        if any(['DG8' in rsc for rsc 
+                in pyvisa.ResourceManager().list_resources()]):
+            arb_connected = True
+        
+        Label(topleft, text='Oscilloscope: ').grid(column=0, row=0, sticky=(E))
+        Label(topleft, text='Connected' if scope_connected else 'NOT CONNECTED').grid(
+            column=1, row=0)
+        Label(topleft, text='Func. Gen: ').grid(column=0, row=1, sticky=(E))
+        Label(topleft, text='Connected' if arb_connected else 'NOT CONNECTED').grid(
+            column=1, row=1)
+        
+        # Waveform selection dropdown
+        # !!!TODO: propagate default waveform options from waveforms/ 
+        Label(topleft, text='Waveform: ').grid(column=0, row=2, sticky=(E))
+        self.waveformselection = StringVar(topleft)
+        OptionMenu(topleft, self.waveformselection, '', ['', 'waveform2']).grid(
+            column=1, row=2, sticky=(E,W))
+        Button(topleft, text='Apply Waveform', command=self.apply_waveform).grid(
+            column=2, row=2, sticky=(W))
+        
+        
+        # Record... Buttons
+        Button(topleft, text='Record Reference', command=self.record_reference).grid(
+            column=0, row=3, sticky=(E))
+        Button(topleft, text='Record Spectrum', command=self.record_single).grid(
+            column=1, row=3, sticky=(W,E))
+        Button(topleft, text='Record for...', command=self.record_duration).grid(
+            column=2, row=3, sticky=(W))
+        
+        
+        # Multiplexing buttons
+        Label(topleft, text='Multiplex: ').grid(
+            column=0, row=4, sticky=(E))
+        Button(topleft, text='Titration', command=self.multiplex_titration).grid(
+            column=1, row=4, sticky=(W,E))
+        Button(topleft, text='In-vivo', command=self.multiplex_invivo).grid(
+            column=2, row=4, sticky=(W))
+        
+        
+        
+        ### TOP RIGHT: Input fields ###
+        
+        # mVpp input
+        Label(topright, text='Amplitude (mV peak-peak): ').grid(
+            column=0, row=0, sticky=(E))
+        self.amplitude_input = Text(topright, height=1, width=3)
+        self.amplitude_input.insert('1.0', '25')
+        self.amplitude_input.grid(column=1, row=0, sticky=(W,E))
+        
+        # Current range selection
+        current_ranges = ['1 A','100 mA','10 mA','1 mA','100 uA','10 uA','1 uA','100 nA', '10 nA']
+        Label(topright, text='NOVA Current Range: ').grid(
+            column=0, row=1, sticky=(E))
+        self.current_range = StringVar(topright)
+        OptionMenu(topright, self.current_range, current_ranges[6],
+                   *current_ranges).grid(column=1, row=1, sticky=(W,E))
+        
+        
+        # Reference spectrum correction
+        Label(topright, text='Reference Correction: ').grid(
+            column=0, row=2, sticky=(E))
+        self.ref_correction_bool = BooleanVar(topright, value=TRUE)
+        Checkbutton(topright, text='', variable=self.ref_correction_bool).grid(
+            column=1, row=2, sticky=(W))
+        
+        
+        # Generate optimize waveform button
+        Button(topright, text='Create Optimized Waveform', command=
+               self.create_optimized_waveform).grid(column=0, row=3,
+                                                    columnspan=2, sticky=(W,E))
+        
+        
+        
+        
+    def apply_waveform(self):
+        return
+    
+    
+    def record_reference(self):
+        return
+    
+    
+    def record_single(self):
+        return
+    
+    
+    def record_duration(self):
+        return
+    
+    
+    def multiplex_titration(self):
+        return
+    
+    
+    def multiplex_invivo(self):
+        return
+    
+    
+    def create_optimized_waveform(self):
+        return
+        
+        
         
         
         
@@ -180,8 +295,12 @@ if __name__ == '__main__':
         root.quit()
         gui.willStop = True
         
-    except Exception:
+    except Exception as e:
+        sys.stdout = default_stdout
+        sys.stdin  = default_stdin
+        sys.stderr = default_stderr
         print(traceback.format_exc())
+    
     
     sys.stdout = default_stdout
     sys.stdin  = default_stdin
