@@ -5,6 +5,11 @@ import pandas as pd
 from funcs import nearest
 
 
+# !!! TODO: change this
+
+waveform_dir = r'C:/Users/BRoehrich/Desktop/git/FFTEIS/waveforms'
+
+
 def generate_waveform(f0, f1, n_pts):
     '''
     f0: float, starting frequency (Hz)
@@ -100,12 +105,24 @@ class Waveform():
         return
     
     
-    def to_csv(self, file):
+    def to_csv(self):
+        
         assert type(self.freqs) in (list, np.ndarray), 'Invalid frequencies'
         assert type(self.phases) in (list, np.ndarray), 'Invalid phases'
+        opt = '_opt'
         if type(self.amps) not in (list, np.ndarray):
+            opt = ''
             self.amps = np.ones(len(self.freqs))
             
+        path = waveform_dir
+        
+        high = max(self.freqs)
+        low  = min(self.freqs)
+        n    = len(self.freqs)
+        
+        name = f'{high}_{low}_{n}{opt}.csv'    
+        file = os.path.join(path, name)
+        
         df = pd.DataFrame({'freqs': self.freqs,
                            'phases': self.phases,
                            'amps': self.amps})
@@ -156,10 +173,10 @@ if __name__ == '__main__':
     wf = Waveform()
     wf.generate(10, 1000, 14)
     out_csv = os.path.join(csv_dir, 'test.csv')
-    wf.to_csv(out_csv)
+    wf.to_csv()
     # wf.from_csv(out_csv)
-    fig, ax = plt.subplots()
-    wf.plot_to_ax(ax)
+    # fig, ax = plt.subplots()
+    # wf.plot_to_ax(ax)
 
 
 
