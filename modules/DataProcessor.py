@@ -118,6 +118,7 @@ class DataProcessor():
         self.applied_freqs = wf.freqs
         
         wf_name = wf.name()
+        wf_name = wf_name.replace('_opt', '')
         correction_files = [f for f in os.listdir('waveforms/reference')
                             if wf_name in f]
         if len(correction_files) == 0:
