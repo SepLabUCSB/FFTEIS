@@ -53,7 +53,8 @@ class DataProcessor():
             phase = np.angle(Z, deg=True),
             experiment  = self.master.experiment
             )
-        spectrum.correct_Z(self.Z_factors, self.phase_factors)
+        if self.master.GUI.ref_correction_bool.get():
+            spectrum.correct_Z(self.Z_factors, self.phase_factors)
         self.master.experiment.append_spectrum(spectrum)
 
                 

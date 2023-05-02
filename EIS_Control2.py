@@ -30,7 +30,7 @@ default_stdout = sys.stdout
 default_stdin  = sys.stdin
 default_stderr = sys.stderr
 
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 plt.style.use('ffteis.mplstyle')
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
@@ -195,12 +195,14 @@ class GUI():
         
         # Waveform selection dropdown
         # !!!TODO: propagate default waveform options from waveforms/ 
-        waveforms = [f.replace('.csv', '') for f in os.listdir('waveforms')]
+        waveforms = [f.replace('.csv', '') for f in os.listdir('waveforms')
+                     if f != 'reference']
+        waveforms.sort(key=lambda s: [int(x) for x in s.split('_')[:-1]])
         Label(topleft, text='Waveform: ').grid(column=0, row=2, sticky=(E))
         self.waveform_selection = StringVar(topleft)
-        OptionMenu(topleft, self.waveform_selection, waveforms[0], *waveforms,
-                   command=self.show_waveform).grid(
-            column=1, row=2, sticky=(E,W))
+        self.waveformMenu = OptionMenu(topleft, self.waveform_selection, 
+            waveforms[0], *waveforms, command=self.show_waveform)
+        self.waveformMenu.grid(column=1, row=2, sticky=(E,W))
         Button(topleft, text='Apply Waveform', command=self.apply_waveform).grid(
             column=2, row=2, sticky=(E,W))
         
@@ -256,6 +258,13 @@ class GUI():
                                                     columnspan=2, sticky=(W,E))
     
                                                     
+        ###############################
+        #####     END __INIT__    #####  
+        ###############################
+        
+        
+
+                                                    
     def update_plot(self):
         
         if self.master.experiment.spectra:
@@ -267,25 +276,42 @@ class GUI():
                 
                 Z = abs(Z)
                 
+                # Plot |Z| and phase
                 self.ax.set_xscale('linear')
                 self.ax.clear()
                 self.ax2.clear()
-                self.ax.plot(freqs, phase, 'o-', color=colors[1])
-                self.ax2.plot(freqs, Z, 'o-', color=colors[0])
-                self.ax.set_xlabel('Frequency/ Hz')
-                self.ax.set_ylabel(r'Phase/ $\degree$', color=colors[1])
-                self.ax2.set_ylabel(r'|Z|/ $\Omega$', color=colors[0])
+                self.ax2.plot(freqs, phase, 'o-', color='orange')
+                self.ax.plot(freqs, Z, 'o-', color=colors[0])
                 
-                self.ax.set_ylim(min(phase)-10, max(phase)+10)
-                self.ax2.set_ylim(min(Z)-1.05*min(Z), 1.05*max(Z))
+                # Set axis labels
+                self.ax.set_xlabel('Frequency/ Hz')
+                self.ax2.set_ylabel(r'Phase/ $\degree$', color='orange')
+                self.ax.set_ylabel(r'|Z|/ $\Omega$', color=colors[0])
+                
+                # Set ticks and axis limits
+                self.ax.set_ylim(min(Z)-1.05*min(Z), 1.05*max(Z))
                 self.ax.set_xscale('log')
+                self.ax2.set_yticks([-180, -150, -120, -90, -60, -30, 0,
+                                     30, 60, 90, 120, 150, 180])
+                self.ax2.set_ylim(min(phase)-10, max(phase)+10)
                 self.ax.set_xticks([1e-1,1e0,1e1,1e2,1e3,1e4,1e5,1e6])
                 self.ax.set_xlim(0.7*min(freqs), 1.5*max(freqs))
+                
+                # Draw it
                 self.fig.tight_layout()
                 self.canvas.draw_idle()
         
         # Schedule next check
         self.root.after(10, self.update_plot)
+        return
+    
+    
+    def update_waveform_dropdown(self):
+        waveforms = [f.replace('.csv', '') for f in os.listdir('waveforms')
+                     if f != 'reference']
+        waveforms.sort(key=lambda s: [int(x) for x in s.split('_')[:-1]])
+        
+        self.waveformMenu.set_menu(waveforms[0], *waveforms)
         return
     
                                                     
@@ -306,7 +332,6 @@ class GUI():
         
     def apply_waveform(self):
         # Send waveform data to arbitrary waveform generator. 
-        # TODO: Also save the Waveform object to the current Experiment
         waveform = self.waveform_selection.get()
         mVpp     = self.amplitude_input.get('1.0', 'end')
         
@@ -365,12 +390,9 @@ class GUI():
         spectra = self.master.experiment.spectra
         
         # Average them together
-        Zs = np.array([np.array(spec.Z) for spec in spectra])
-        Z  = np.mean(Zs, axis=0)
-        Z  = np.absolute(Z)
-        
-        phases = np.array([np.array(spec.phase) for spec in spectra])
-        phase  = np.mean(phases, axis=0)
+        avg_spectrum = spectra[0].average(spectra[1:])
+        Z     = np.absolute(avg_spectrum.Z)
+        phase = avg_spectrum.phase
         
         # Calculate correction factors and save locally
         Z_correction     = Z/R
@@ -392,6 +414,7 @@ class GUI():
     
     def record_single(self):
         self.master.set_experiment(Experiment())
+        self.master.experiment.set_waveform(self.master.waveform)
         self.master.Oscilloscope.record_frame()
         return
     
@@ -409,36 +432,32 @@ class GUI():
     
     
     def create_optimized_waveform(self):
+        spectra = self.master.experiment.spectra
+        if len(spectra) == 0:
+            print('No previous spectra to create optimized waveform from!')
+            return
+        
+        if len(spectra) > 1:
+            #Average them all together
+            avg_spectrum = spectra[0].average(spectra[1:]) 
+        else:
+            avg_spectrum = spectra[0]
+        
+        
+        # Normalized, optimized amplitudes
+        # Proportional to sqrt(Z)
+        Z = np.sqrt(np.absolute(avg_spectrum.Z))       
+        amps = Z/max(Z)
+        
+        base_wf = self.master.experiment.waveform
+        opt_wf  = Waveform(freqs  = base_wf.freqs,
+                           phases = base_wf.phases,
+                           amps   = amps)
+        opt_wf.to_csv()        
+        self.update_waveform_dropdown()        
         return
         
-        
-        
-        
-        
-        
-    # Spectrum/ waveform display window
-    
-    # Real time plot display window
-        
-    # Save/ update config
-    
-    # apply waveform
-    
-    # Record reference spectrum
-    
-    # record single spectrum
-    
-    # record continuously
-    
-    # multiplex - titration
-    
-    # multiplex - invivo
-    
-    # Create new waveform (csv template)
-    
-    # Create new waveform from last measurement
-    
-    # Adjust waveform Vpp
+
     
     
 

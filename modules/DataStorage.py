@@ -77,3 +77,20 @@ class ImpedanceSpectrum():
         d.to_csv(save_path, columns = ['f', 're', 'im'],
                  header = ['<Frequency>', '<Re(Z)>', '<Im(Z)>'], 
                  sep = '\t', index = False, encoding='ascii')
+        
+    
+    def average(self, spectra:list):
+        '''
+        Average this spectrum with several others.
+        
+        Returns a new ImpedanceSpectrum object
+        '''
+        
+        Zs = np.array([np.array(spec.Z) for spec in spectra])
+        Z  = np.mean(Zs, axis=0)
+        
+        phases = np.array([np.array(spec.phase) for spec in spectra])
+        phase  = np.mean(phases, axis=0)
+        
+        return ImpedanceSpectrum(self.freqs, Z, phase, self.experiment)
+        

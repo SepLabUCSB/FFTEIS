@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -184,7 +186,6 @@ class Waveform():
  
 
 if __name__ == '__main__':
-    import os
     csv_dir = r'C:/Users/BRoehrich/Desktop/git/FFTEIS/waveforms'
     wf = Waveform()
     # wf.generate(10, 1000, 14)
