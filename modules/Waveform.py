@@ -96,6 +96,10 @@ class Waveform():
         self.amps   = amps
     
     
+    def __bool__(self):
+        return (type(self.freqs) in (list, np.ndarray))
+    
+    
     def name(self):
         assert type(self.freqs) in (list, np.ndarray), 'Invalid frequencies'
         assert type(self.phases) in (list, np.ndarray), 'Invalid phases'
@@ -119,9 +123,9 @@ class Waveform():
     
     def from_csv(self, file):
         df = pd.read_csv(file)
-        self.freqs  = df['freqs']
-        self.phases = df['phases']
-        self.amps   = df['amps']
+        self.freqs  = df['freqs'].to_numpy()
+        self.phases = df['phases'].to_numpy()
+        self.amps   = df['amps'].to_numpy()
         return
     
     
@@ -183,9 +187,9 @@ if __name__ == '__main__':
     import os
     csv_dir = r'C:/Users/BRoehrich/Desktop/git/FFTEIS/waveforms'
     wf = Waveform()
-    wf.generate(10, 1000, 14)
-    out_csv = os.path.join(csv_dir, 'test.csv')
-    wf.to_csv()
+    # wf.generate(10, 1000, 14)
+    # out_csv = os.path.join(csv_dir, 'test.csv')
+    # wf.to_csv()
     # wf.from_csv(out_csv)
     # fig, ax = plt.subplots()
     # wf.plot_to_ax(ax)

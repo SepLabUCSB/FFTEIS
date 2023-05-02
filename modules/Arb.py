@@ -97,7 +97,7 @@ class Arb():
     Class to communicate with Rigol DG812 arbitrary waveform generator
     '''
     def __init__(self, master):
-        self.willStop = True
+        self.willStop = False
         self.master = master
         self.master.register(self)
         

@@ -20,7 +20,7 @@ class Oscilloscope():
     '''
     def __init__(self, master, ADCDataBuffer):
         
-        self.willStop = True
+        self.willStop = False
         self.master = master
         self.master.register(self)
         
@@ -63,9 +63,23 @@ class Oscilloscope():
         self._is_recording = False
         
     
+    def get_i_range(self):
+        # Read current range from GUI
+        i_range = self.master.GUI.current_range.get()
+        val, unit = i_range.split(' ')
+        
+        factor = {'nA': 1e-9,
+                  'uA': 1e-6,
+                  'mA': 1e-3,
+                  'A' : 1,}
+        
+        val = int(val)
+        val *= factor[unit]
+        return val
+    
     
     def get_recording_params(self):
-        i_range     = 1e-6 # TODO: get this from NOVA or GUI
+        i_range     = self.get_i_range()
         vdiv1       = float(self.inst.query('C1:VDIV?')[8:-2])
         voffset1    = float(self.inst.query('C1:OFST?')[8:-2])
         vdiv2       = float(self.inst.query('C2:VDIV?')[8:-2])

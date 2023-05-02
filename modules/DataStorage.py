@@ -14,6 +14,7 @@ class Experiment():
         if name:
             path = os.path.join(path, name)
         else:
+            path = os.path.join(path, 'autosave')
             path = os.path.join(path, datetime.now().strftime('%H-%M-%S'))
             
         self.path     = path    # Save path
@@ -27,7 +28,7 @@ class Experiment():
     def append_spectrum(self, spectrum):
         self.spectra.append(spectrum)
         self.i = len(self.spectra)
-        self.spectra[self.i].save()
+        spectrum.save()
         
         
     def set_waveform(self, Waveform):
@@ -42,7 +43,7 @@ class ImpedanceSpectrum():
         self.freqs     = freqs
         self.Z         = Z
         self.phase     = phase
-        self.expt      = experiment # Associated Experiment object
+        self.experiment= experiment # Associated Experiment object
         
     def correct_Z(self, Z_factors, phase_factors):
         
@@ -52,7 +53,7 @@ class ImpedanceSpectrum():
         
         # Phase correction is additive
         self.phase -= phase_factors
-        self.Z = Z * np.exp(1j*Z*np.pi/180)
+        self.Z = Z * np.exp(1j*self.phase*np.pi/180)
         return
     
     def save(self, name=None):

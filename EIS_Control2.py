@@ -23,12 +23,15 @@ from modules.DataProcessor import DataProcessor
 from modules.DataStorage import Experiment, ImpedanceSpectrum
 from modules.Oscilloscope import Oscilloscope
 from modules.Waveform import Waveform
+from modules.funcs import nearest, run
 
 default_stdout = sys.stdout
 default_stdin  = sys.stdin
 default_stderr = sys.stderr
 
 matplotlib.use('TkAgg')
+plt.style.use('ffteis.mplstyle')
+colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 
 '''
@@ -55,6 +58,7 @@ Test:
 class MasterModule():
     
     def __init__(self):
+        self.willStop = False
         self.STOP = False
         self.modules = [self]
         
@@ -96,6 +100,11 @@ class MasterModule():
         for module in self.modules:
             if hasattr(module, 'stop'):
                 module.stop()
+                
+                
+    def set_experiment(self, Experiment):
+        self.experiment = Experiment
+        return
                 
     
     
@@ -149,6 +158,7 @@ class GUI():
         botleft.grid(row=1, column=0, sticky=(N,S))
         self.fig = plt.Figure(figsize=(5,4), dpi=100)
         self.ax = self.fig.add_subplot(111)
+        self.ax2 = self.ax.twinx()
         self.canvas = FigureCanvasTkAgg(self.fig, master=botleft)
         self.canvas.get_tk_widget().grid(row=0, column=0)
 
@@ -247,20 +257,34 @@ class GUI():
                                                     
     def update_plot(self):
         
-        if self.master.experiment.spectra[-1] != self.last_spectrum:
-            self.last_spectrum = self.master.experiment.spectra[-1]
-            freqs = self.last_spectrum.freqs
-            Z     = self.last_spectrum.Z
-            phase = self.last_spectrum.phase
-            self.ax.cla()
-            self.ax.plot(freqs, phase)
-            self.ax2.plot(freqs, abs(Z))
-            self.ax.set_xlabel('Frequency/ Hz')
-            self.ax.set_ylabel(r'Phase/ $\degree$')
-            self.ax2.set_ylabel(r'|Z|/ M$\Omega')
+        if self.master.experiment.spectra:
+            if self.master.experiment.spectra[-1] != self.last_spectrum:
+                self.last_spectrum = self.master.experiment.spectra[-1]
+                freqs = self.last_spectrum.freqs
+                Z     = self.last_spectrum.Z
+                phase = self.last_spectrum.phase
+                
+                Z = abs(Z)
+                
+                self.ax.set_xscale('linear')
+                self.ax.clear()
+                self.ax2.clear()
+                self.ax.plot(freqs, phase, 'o-', color=colors[1])
+                self.ax2.plot(freqs, Z, 'o-', color=colors[0])
+                self.ax.set_xlabel('Frequency/ Hz')
+                self.ax.set_ylabel(r'Phase/ $\degree$', color=colors[1])
+                self.ax2.set_ylabel(r'|Z|/ $\Omega$', color=colors[0])
+                
+                self.ax.set_ylim(min(phase)-10, max(phase)+10)
+                self.ax2.set_ylim(min(Z)-1.05*min(Z), 1.05*max(Z))
+                self.ax.set_xscale('log')
+                self.ax.set_xticks([1e-1,1e0,1e1,1e2,1e3,1e4,1e5,1e6])
+                self.ax.set_xlim(0.7*min(freqs), 1.5*max(freqs))
+                self.fig.tight_layout()
+                self.canvas.draw_idle()
         
         # Schedule next check
-        self.root.after(100, self.update_plot)
+        self.root.after(10, self.update_plot)
         return
     
                                                     
@@ -270,7 +294,9 @@ class GUI():
         waveform_file = f'waveforms/{waveform}.csv'
         wf = Waveform()
         wf.from_csv(waveform_file)
-        self.ax.cla()
+        self.ax.set_xscale('linear')
+        self.ax.clear()
+        self.ax2.clear()
         wf.plot_to_ax(self.ax)
         self.fig.tight_layout()
         self.canvas.draw_idle()
@@ -418,8 +444,9 @@ if __name__ == '__main__':
     buffer          = ADCDataBuffer()
     dataProcessor   = DataProcessor(master, buffer)
     oscilloscope    = Oscilloscope(master, buffer)
-        
-        
+    
+    # run(master.run)
+    run(dataProcessor.run)
     
     root = Tk()
     try:

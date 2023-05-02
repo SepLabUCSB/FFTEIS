@@ -24,19 +24,25 @@ class DataProcessor():
         self.buffer = ADCDataBuffer
                 
         self.data  = []
+        self.wf    = None
         
 
     
     def run(self):
         st = time.time()
         while True:
-            if time.time() - st > 10:
-                return
+            # if time.time() - st > 10:
+            #     return
             if self.master.STOP:
                 return
+            if self.master.waveform:
+                if self.wf != self.master.waveform:
+                    self.wf = self.master.waveform
+                    self.load_correction_factors()
             if self.buffer.buffer:
                 data = self.buffer.get(1)
                 self.process(*data)
+            time.sleep(0.05)
     
                     
     
@@ -45,10 +51,9 @@ class DataProcessor():
             freqs = freqs,
             Z     = Z,
             phase = np.angle(Z, deg=True),
-            expt  = self.master.experiment
+            experiment  = self.master.experiment
             )
         spectrum.correct_Z(self.Z_factors, self.phase_factors)
-        spectrum.save()
         self.master.experiment.append_spectrum(spectrum)
 
                 
@@ -69,16 +74,15 @@ class DataProcessor():
         sample_rate = recording_params['sara']
         total_time  = recording_params['frame_time']
         i_range     = recording_params['i_range']
-        
-        
+                
         t = np.linspace(0, total_time, int(sample_rate*total_time))
         v = volts1
-        i = volts2/i_range
+        i = volts2*i_range
         
         
-        # TODO: adapt for spectra that don't end at 1Hz
-        cutoff_time = 1
+        cutoff_time = 1/self.applied_freqs[0]
         cutoff_id   = max([i for i, ti in enumerate(t) if ti <= cutoff_time])
+        cutoff_id  += 1
         
         t = t[:cutoff_id]
         v = v[:cutoff_id]
@@ -87,10 +91,24 @@ class DataProcessor():
         
         freqs = sample_rate*np.fft.rfftfreq(len(v))[1:]
         ft_v  =             np.fft.rfft(v)[1:]
-        ft_i  =             np.fft.rfft(i)[1:]
-                
+        ft_i  =            -np.fft.rfft(i)[1:]
+        
+        
+        freqs = freqs.round(3)
+        
+        # Only keep applied frequencies
+        idxs = [i for i, freq in enumerate(freqs) 
+                if freq in self.applied_freqs]
+        
         
         self.data.append( (freqs, ft_v, ft_i) )
+        
+        freqs = freqs[idxs]
+        ft_v  = ft_v[idxs]
+        ft_i  = ft_i[idxs]
+        self.make_spectrum(freqs, ft_v/ft_i)
+        
+        
     
     
     def load_correction_factors(self):
