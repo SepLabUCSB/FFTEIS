@@ -139,6 +139,7 @@ class Oscilloscope():
         volts2 = adc2*(vdiv2/25) - voffset2
         self.buffer.append( (time.time(), recording_params, volts1, volts2) )
         self._is_recording = False
+        self.inst.write('TRMD AUTO')
         return volts1, volts2
         
     

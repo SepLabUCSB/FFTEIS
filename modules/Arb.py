@@ -61,7 +61,7 @@ def wait(inst):
             time.sleep(0.05)
 
 
-def apply_waveform(inst, s, Vpp=1):
+def apply_waveform(inst, s, Vpp=1, srate=100000):
     '''
     Apply arbitrary waveform s to Rigol DG812 AWG
     
@@ -84,7 +84,7 @@ def apply_waveform(inst, s, Vpp=1):
     inst.write(':SOURCE1:FUNC:SEQ:FILT INSERT')
     send_bytes(inst, s, channel=1)
     # inst.write(':SOURCE1:VOLTAGE %sVPP'%(Vpp))
-    inst.write(':SOURCE1:FUNC:SEQ:SRAT 100000')
+    inst.write(f':SOURCE1:FUNC:SEQ:SRAT {int(srate)}')
     inst.write(':SOURCE1:FUNC:SEQ:EDGETime 0.000005')
     inst.write(':SOURCE1:FUNC:')
     wait(inst)
@@ -111,9 +111,12 @@ class Arb():
         
     
     def send_waveform(self, Waveform, Vpp):
-        v = Waveform.time_domain()
+        max_freq = max(Waveform.freqs)
+        sample_freq = min(10000, 10*max_freq)
+        sample_freq = int(sample_freq)
+        v = Waveform.time_domain(srate=sample_freq)
         self.turn_off()
-        apply_waveform(self.inst, v)
+        apply_waveform(self.inst, v, srate=sample_freq)
         self.set_amplitude(Vpp)
         self.turn_on()
         

@@ -125,6 +125,7 @@ class DataProcessor():
             return
         
         file = correction_files[-1] # Most recent date
+        file = os.path.join('waveforms/reference', file)
         df = pd.read_csv(file)
         self.Z_factors     = df['Z_factor'].to_numpy()
         self.phase_factors = df['phase_factor'].to_numpy()

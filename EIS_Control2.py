@@ -4,6 +4,7 @@ from datetime import datetime
 import os
 import sys
 import traceback
+from functools import partial
 from tkinter import *
 from tkinter.ttk import *
 import tkinter as tk
@@ -331,7 +332,6 @@ class GUI():
     
     
     def record_reference(self):
-        
         if self.ref_correction_bool.get():
             print('Uncheck "Apply Reference Correction" before\n'+
                   'recording a reference spectrum!\n')  
@@ -340,6 +340,13 @@ class GUI():
         R = tk.simpledialog.askstring('Calibration', 'Resistance:')
         if not R:
             return
+        
+        # Do it in another thread
+        run( partial(self._record_reference, R) )
+        return
+    
+    def _record_reference(self, R):
+        
         
         R = R.replace('k', '000')
         R = R.replace('M', '000000')
@@ -355,11 +362,12 @@ class GUI():
         # Record 5 spectra
         for _ in range(5):
             self.master.Oscilloscope.record_frame()
-        spectra = self.master.spectra
+        spectra = self.master.experiment.spectra
         
         # Average them together
         Zs = np.array([np.array(spec.Z) for spec in spectra])
         Z  = np.mean(Zs, axis=0)
+        Z  = np.absolute(Z)
         
         phases = np.array([np.array(spec.phase) for spec in spectra])
         phase  = np.mean(phases, axis=0)
@@ -372,7 +380,8 @@ class GUI():
                            'Z_factor': Z_correction,
                            'phase_factor': phase_correction})
         
-        date = datetime.now().strf('%Y-%m-%d')
+        date = datetime.now().strftime('%Y-%m-%d')
+        name = self.master.experiment.waveform.name()
         out_file = f'waveforms/reference/{date}-{name}-{R}Ohm.csv'
         df.to_csv(out_file, index=False)        
         

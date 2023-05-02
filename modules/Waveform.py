@@ -58,21 +58,21 @@ def generate_waveform(f0, f1, n_pts):
     return freqs, phases
         
 
-def make_time_domain(freqs, phases, mVpp):
+def make_time_domain(freqs, phases, mVpp, srate):
     '''
     Total measurement duration is 1/min(freqs): 1 cycle at the lowest
     requested frequency.
     
-    Number of points needd it duration*sample rate. For now, sample rate is 
-    fixed at 100 kHz. In the future the sample rate will be chosen based
-    on the maximum requested frequency (srate >= 10* max(freqs) )
+    Number of points needd it duration*sample rate. The sample rate 
+    is chosen based on the maximum requested frequency 
+    srate = 10 kHz or 10*max frequency, whichever is higher
     '''
     
     
     if type(mVpp) not in (list, np.ndarray):
         mVpp = [mVpp for _ in freqs]
     
-    sample_rate = 100000 # TODO: set this dynamically, choose between i.e. 10, 25, 100kHz
+    sample_rate = srate 
     
     N = (1/min(freqs)) * sample_rate
     N = int(np.ceil(N)) # collect 1 extra point if N is not an integer
@@ -151,7 +151,7 @@ class Waveform():
         self.amps = amp_factor/max(amp_factor)
       
         
-    def time_domain(self):
+    def time_domain(self, srate=100000):
         if not (len(self.freqs) == len(self.phases) > 0):
             print('frequencies or phases invalid')
             return
@@ -159,7 +159,7 @@ class Waveform():
         if type(self.amps) not in (list, np.ndarray):
             self.amps = np.ones(len(self.freqs))
         
-        v = make_time_domain(self.freqs, self.phases, self.amps)
+        v = make_time_domain(self.freqs, self.phases, self.amps, srate)
         return v
     
     
