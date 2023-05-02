@@ -35,23 +35,16 @@ plt.style.use('ffteis.mplstyle')
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 
-'''
-Use oscilloscope but rewrite with threading
-
-DataQ ADC has aliasing issues due to imprecise timing and sampling rates
-
-Everything runs in main thread except:
-    Oscilloscope.record_frame()
-    
-
+'''  
 TODO:
+- "save as" last experiment
+    
 - make new waveform interface    
+- record by duration
+- titration multiplexing
+- invivo multiplexing
 
-
-Test:
-    -reference spectrum
-    -reference correction
-
+- x vs t plot
 '''
 
 
@@ -63,8 +56,8 @@ class MasterModule():
         self.STOP = False
         self.modules = [self]
         
-        self.experiment = Experiment()
-        self.waveform   = Waveform()
+        self.experiment = Experiment() # Tracks current Experiment object
+        self.waveform   = Waveform()   # Tracks waveform currently on Arb.
       
         
     def register(self, module):
@@ -194,7 +187,6 @@ class GUI():
             column=2, row=1, sticky=(E))
         
         # Waveform selection dropdown
-        # !!!TODO: propagate default waveform options from waveforms/ 
         waveforms = [f.replace('.csv', '') for f in os.listdir('waveforms')
                      if f != 'reference']
         waveforms.sort(key=lambda s: [int(x) for x in s.split('_')[:-1]])
@@ -266,7 +258,10 @@ class GUI():
 
                                                     
     def update_plot(self):
-        
+        '''
+        Called periodically (every 50 ms) by Tk GUI. Checks if a new
+        spectrum has been recorded, and if so, plots it to the figure.
+        '''
         if self.master.experiment.spectra:
             if self.master.experiment.spectra[-1] != self.last_spectrum:
                 self.last_spectrum = self.master.experiment.spectra[-1]
@@ -307,6 +302,9 @@ class GUI():
     
     
     def update_waveform_dropdown(self):
+        '''
+        Update list of waveforms in dropdown menu
+        '''
         waveforms = [f.replace('.csv', '') for f in os.listdir('waveforms')
                      if f != 'reference']
         waveforms.sort(key=lambda s: [int(x) for x in s.split('_')[:-1]])
@@ -316,8 +314,10 @@ class GUI():
     
                                                     
     def show_waveform(self, waveform):
-        # Triggered by selecting a new waveform from the dropdown. Show its
-        # frequency domain representation in the display
+        '''
+        Triggered by selecting a new waveform from the dropdown. Show its
+        frequency domain representation in the display
+        '''
         waveform_file = f'waveforms/{waveform}.csv'
         wf = Waveform()
         wf.from_csv(waveform_file)
@@ -331,7 +331,9 @@ class GUI():
     
         
     def apply_waveform(self):
-        # Send waveform data to arbitrary waveform generator. 
+        '''
+        Send waveform data to arbitrary waveform generator. 
+        '''
         waveform = self.waveform_selection.get()
         mVpp     = self.amplitude_input.get('1.0', 'end')
         
@@ -344,7 +346,6 @@ class GUI():
         wf = Waveform()
         wf.from_csv(waveform_file)
         
-        # self.master.experiment.set_waveform(wf) # don't want to overwrite waveform from last experiment
         self.master.Arb.send_waveform(wf, Vpp)
         self.master.waveform = wf
         self.master.DataProcessor.load_correction_factors()
@@ -352,11 +353,19 @@ class GUI():
     
     
     def setup_scope(self):
+        '''
+        Do oscilloscope autocentering
+        '''
         self.master.Oscilloscope.autocenter_frames()
         return
     
     
     def record_reference(self):
+        '''
+        Record and save a "reference" spectrum of a resistor with
+        a known resistance. This can be used to correct for filtering
+        artefacts in subsequent experiments.
+        '''
         if self.ref_correction_bool.get():
             print('Uncheck "Apply Reference Correction" before\n'+
                   'recording a reference spectrum!\n')  
@@ -371,8 +380,6 @@ class GUI():
         return
     
     def _record_reference(self, R):
-        
-        
         R = R.replace('k', '000')
         R = R.replace('M', '000000')
         try:
@@ -413,6 +420,9 @@ class GUI():
     
     
     def record_single(self):
+        '''
+        Record a single impedance spectrum
+        '''
         self.master.set_experiment(Experiment())
         self.master.experiment.set_waveform(self.master.waveform)
         self.master.Oscilloscope.record_frame()
@@ -432,6 +442,10 @@ class GUI():
     
     
     def create_optimized_waveform(self):
+        '''
+        Use the previous spectrum/ spectra to generate a
+        new waveform with "optimized" amplitudes
+        '''
         spectra = self.master.experiment.spectra
         if len(spectra) == 0:
             print('No previous spectra to create optimized waveform from!')
