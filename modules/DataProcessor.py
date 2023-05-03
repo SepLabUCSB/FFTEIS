@@ -122,6 +122,7 @@ class DataProcessor():
         correction_files = [f for f in os.listdir('waveforms/reference')
                             if wf_name in f]
         if len(correction_files) == 0:
+            print(f'Error: Will not correct spectra: no reference spectrum found for waveform {wf.name()}!')
             self.Z_factors     = np.ones(len(self.applied_freqs))
             self.phase_factors = np.zeros(len(self.applied_freqs))
             return

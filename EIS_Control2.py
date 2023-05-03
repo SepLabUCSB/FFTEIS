@@ -10,6 +10,7 @@ from tkinter.ttk import *
 import tkinter as tk
 
 # Requirements
+import psutil
 import pandas as pd
 import numpy as np
 import matplotlib
@@ -99,6 +100,38 @@ class MasterModule():
     def set_experiment(self, Experiment):
         self.experiment = Experiment
         return
+    
+    
+    def check_connections(self):
+        # Check that scope and arb are connected and turned on,
+        # and that NOVA is running
+        self.scope_connected = False
+        self.arb_connected   = False
+        if any(['SDS1' in rsc for rsc 
+                in pyvisa.ResourceManager().list_resources()]):
+            self.scope_connected = True
+        if any(['DG8' in rsc for rsc 
+                in pyvisa.ResourceManager().list_resources()]):
+            self.arb_connected = True
+        self.NOVA_connected = False
+        for p in psutil.process_iter():
+            if 'Nova.exe' in p.name():
+                self.NOVA_connected = True
+                break
+        
+        if not self.scope_connected:
+            print('Oscilloscope not found! Make sure SDS1202X-E is powered on and connected to PC.')
+            return False
+        if not self.arb_connected:
+            print('Waveform generator not found! Make sure Rigol DG812 is powered on and connected to PC.')
+            return False
+        if not self.NOVA_connected:
+            print('NOVA not detected! Make sure Nova is running.')
+            return False
+        
+        return True
+            
+        
                 
     
     
@@ -167,21 +200,13 @@ class GUI():
         
         ### TOP LEFT: Control buttons ###
         
-        # Check if SDS1202X-E and DG812 are connected and on
-        scope_connected = False
-        arb_connected   = False
-        if any(['SDS1' in rsc for rsc 
-                in pyvisa.ResourceManager().list_resources()]):
-            scope_connected = True
-        if any(['DG8' in rsc for rsc 
-                in pyvisa.ResourceManager().list_resources()]):
-            arb_connected = True
-        
+        # Check if SDS1202X-E and DG812 are connected and on  
+        self.master.check_connections()
         Label(topleft, text='Oscilloscope: ').grid(column=0, row=0, sticky=(E))
-        Label(topleft, text='Connected' if scope_connected else 'NOT CONNECTED').grid(
+        Label(topleft, text='Connected' if self.master.scope_connected else 'NOT CONNECTED').grid(
             column=1, row=0)
         Label(topleft, text='Func. Gen: ').grid(column=0, row=1, sticky=(E))
-        Label(topleft, text='Connected' if arb_connected else 'NOT CONNECTED').grid(
+        Label(topleft, text='Connected' if self.master.arb_connected else 'NOT CONNECTED').grid(
             column=1, row=1)
         Button(topleft, text='Setup Oscilloscope', command=self.setup_scope).grid(
             column=2, row=1, sticky=(E))
@@ -480,6 +505,10 @@ class GUI():
 if __name__ == '__main__':
     
     master = MasterModule()
+    
+    if not master.check_connections():
+        input('Press enter to exit')
+        sys.exit()
     
     # Load submodules
     arb             = Arb(master)
