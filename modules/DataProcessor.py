@@ -46,12 +46,13 @@ class DataProcessor():
     
                     
     
-    def make_spectrum(self, freqs, Z):
+    def make_spectrum(self, timestamp, freqs, Z):
         spectrum = ImpedanceSpectrum(
-            freqs = freqs,
-            Z     = Z,
-            phase = np.angle(Z, deg=True),
-            experiment  = self.master.experiment
+            freqs       = freqs,
+            Z           = Z,
+            phase       = np.angle(Z, deg=True),
+            experiment  = self.master.experiment,
+            timestamp   = timestamp
             )
         if self.master.GUI.ref_correction_bool.get():
             spectrum.correct_Z(self.Z_factors, self.phase_factors)
@@ -100,14 +101,14 @@ class DataProcessor():
         # Only keep applied frequencies
         idxs = [i for i, freq in enumerate(freqs) 
                 if freq in self.applied_freqs]
-        
+                
         
         self.data.append( (freqs, ft_v, ft_i) )
         
         freqs = freqs[idxs]
         ft_v  = ft_v[idxs]
         ft_i  = ft_i[idxs]
-        self.make_spectrum(freqs, ft_v/ft_i)
+        self.make_spectrum(timestamp, freqs, ft_v/ft_i)
         
         
     

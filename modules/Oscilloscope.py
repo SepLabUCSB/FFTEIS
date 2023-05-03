@@ -137,7 +137,10 @@ class Oscilloscope():
         
         volts1 = adc1*(vdiv1/25) - voffset1
         volts2 = adc2*(vdiv2/25) - voffset2
-        self.buffer.append( (time.time(), recording_params, volts1, volts2) )
+        if add_to_buffer:
+            self.buffer.append( (time.time(), 
+                                 recording_params, 
+                                 volts1, volts2) )
         self._is_recording = False
         self.inst.write('TRMD AUTO')
         return volts1, volts2
@@ -171,7 +174,7 @@ class Oscilloscope():
         while i < 13:
             
             # Record a frame
-            v1, v2 = self.record_frame()
+            v1, v2 = self.record_frame(add_to_buffer = False)
             
             self.get_recording_params()
             vdiv1 = self.recording_params['vdiv1']

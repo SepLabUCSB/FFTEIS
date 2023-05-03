@@ -18,6 +18,7 @@ class Experiment():
             path = os.path.join(path, datetime.now().strftime('%H-%M-%S'))
             
         self.path     = path    # Save path
+        self.time_file= os.path.join(path, '!times.txt')
         self.spectra  = []
         self.i        = 0       # Counter for # of spectra
         
@@ -29,6 +30,12 @@ class Experiment():
         self.spectra.append(spectrum)
         self.i = len(self.spectra)
         spectrum.save()
+        self.write_time(spectrum)
+        
+    
+    def write_time(self, spectrum):
+        with open(self.time_file, 'a') as f:
+            f.write(f'{spectrum.timestamp}\n')
         
         
     def set_waveform(self, Waveform):
@@ -38,12 +45,13 @@ class Experiment():
     
 class ImpedanceSpectrum():
     
-    def __init__(self, freqs, Z, phase, experiment):
+    def __init__(self, freqs, Z, phase, experiment, timestamp):
         self.timestamp = time.time()
         self.freqs     = freqs
         self.Z         = Z
         self.phase     = phase
         self.experiment= experiment # Associated Experiment object
+        self.timestamp = timestamp
         
     def correct_Z(self, Z_factors, phase_factors):
         
@@ -55,7 +63,7 @@ class ImpedanceSpectrum():
         self.phase -= phase_factors
         self.Z = Z * np.exp(1j*self.phase*np.pi/180)
         return
-    
+          
     def save(self, name=None):
         '''
         Save this spectrum to its Experiment's save path

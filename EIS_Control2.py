@@ -38,6 +38,7 @@ colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 '''  
 TODO:
+- save time data
 - "save as" last experiment
     
 - make new waveform interface    
@@ -233,12 +234,13 @@ class GUI():
             column=2, row=3, sticky=(E,W))
         
         
-        # Multiplexing buttons
-        Label(topleft, text='Multiplex: ').grid(
-            column=0, row=4, sticky=(E))
-        Button(topleft, text='Titration', command=self.multiplex_titration).grid(
+        # Save as button
+        Button(topleft, text='Save last...', command=self.save_last_as).grid(
+            column=0, row=4, sticky=(W,E))
+        # Multiplex buttons
+        Button(topleft, text='Multiplex titration', command=self.multiplex_titration).grid(
             column=1, row=4, sticky=(W,E))
-        Button(topleft, text='In-vivo', command=self.multiplex_invivo).grid(
+        Button(topleft, text='Multiplex in-vivo', command=self.multiplex_invivo).grid(
             column=2, row=4, sticky=(E,W))
         
         
@@ -458,6 +460,18 @@ class GUI():
         return
     
     
+    def save_last_as(self):
+        name = tk.simpledialog.askstring('Save As', 'Input save name: ')
+        if not name:
+            return
+        temp_expt = Experiment(name)
+        temp_expt.set_waveform(self.master.experiment.waveform)
+        for spectrum in self.master.experiment.spectra:
+            spectrum.experiment = temp_expt
+            temp_expt.append_spectrum(spectrum)
+        return
+    
+    
     def multiplex_titration(self):
         return
     
@@ -516,7 +530,7 @@ if __name__ == '__main__':
     dataProcessor   = DataProcessor(master, buffer)
     oscilloscope    = Oscilloscope(master, buffer)
     
-    # run(master.run)
+    run(master.run)
     run(dataProcessor.run)
     
     root = Tk()
@@ -534,7 +548,7 @@ if __name__ == '__main__':
         sys.stderr = default_stderr
         print(traceback.format_exc())
     
-    
+    gui.willStop = True
     sys.stdout = default_stdout
     sys.stdin  = default_stdin
     sys.stderr = default_stderr
