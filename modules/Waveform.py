@@ -116,6 +116,7 @@ class Waveform():
         low  = min(self.freqs)
         n    = len(self.freqs)
         
+        
         return f'{high}_{low}_{n}{opt}'
     
 

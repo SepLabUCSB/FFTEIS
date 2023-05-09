@@ -217,7 +217,7 @@ class GUI():
         # Waveform selection dropdown
         waveforms = [f.replace('.csv', '') for f in os.listdir('waveforms')
                      if f != 'reference']
-        waveforms.sort(key=lambda s: [int(x) for x in s.split('_')[:-1]])
+        waveforms.sort(key=lambda s: [float(x) for x in s.split('_')[:-1]])
         Label(topleft, text='Waveform: ').grid(column=0, row=2, sticky=(E))
         self.waveform_selection = StringVar(topleft)
         self.waveformMenu = OptionMenu(topleft, self.waveform_selection, 
@@ -277,7 +277,11 @@ class GUI():
         Button(topright, text='Create Optimized Waveform', command=
                self.create_optimized_waveform).grid(column=0, row=3,
                                                     columnspan=2, sticky=(W,E))
-    
+        
+                                                    
+        Button(topright, text='Create New Waveform', command=
+               self.create_new_waveform).grid(column=0, row=4,
+                                              columnspan=2, sticky=(W,E))
                                                     
         ###############################
         #####     END __INIT__    #####  
@@ -336,7 +340,7 @@ class GUI():
         '''
         waveforms = [f.replace('.csv', '') for f in os.listdir('waveforms')
                      if f != 'reference']
-        waveforms.sort(key=lambda s: [int(x) for x in s.split('_')[:-1]])
+        waveforms.sort(key=lambda s: [float(x) for x in s.split('_')[:-1]])
         
         self.waveformMenu.set_menu(waveforms[0], *waveforms)
         return
@@ -511,7 +515,71 @@ class GUI():
         opt_wf.to_csv()        
         self.update_waveform_dropdown()        
         return
+    
+    
+    def create_new_waveform(self):
+        '''
+        Make popup that prompts user for starting frequency,
+        ending frequency, and number of frequencies. Then generate
+        a new waveform and save it to the waveforms directory
+        '''
+        popup = Tk()
+        popup.title('Make New Waveform')
+        popup.attributes('-topmost', 1)
         
+        frame = Frame(popup)
+        frame.grid(row=0, column=0)
+        
+        f_0 = 10
+        f_1 = 1000
+        n_freqs = 14        
+        
+        Label(frame, text='Starting frequency (Hz): ').grid(
+            column=0, row=0, sticky=(E))
+        self._f_0 = Text(frame, height=1, width=6)
+        self._f_0.insert('1.0', f_0)
+        self._f_0.grid(column=1, row=0, sticky=(W,E))
+        
+        Label(frame, text='Ending frequency (Hz): ').grid(
+            column=0, row=1, sticky=(E))
+        self._f_1 = Text(frame, height=1, width=6)
+        self._f_1.insert('1.0', f_1)
+        self._f_1.grid(column=1, row=1, sticky=(W,E))
+        
+        Label(frame, text='Number of frequencies: ').grid(
+            column=0, row=2, sticky=(E))
+        self._n_freqs = Text(frame, height=1, width=6)
+        self._n_freqs.insert('1.0', n_freqs)
+        self._n_freqs.grid(column=1, row=2, sticky=(W,E))
+        
+        def _generate():
+            f_0 = self._f_0.get('1.0', 'end')
+            f_1 = self._f_1.get('1.0', 'end')
+            n_freqs = self._n_freqs.get('1.0', 'end')
+            try:
+                f_0 = float(f_0)
+                f_1 = float(f_1)
+                n_freqs = int(n_freqs)
+            except:
+                print('Invalid inputs')
+                return
+            wf = Waveform()
+            wf.generate(f_0, f_1, n_freqs)
+            wf.to_csv()
+            print(f'Generated {wf.name()}')
+            self.update_waveform_dropdown()
+            popup.destroy()
+            return
+        
+        Button(frame, text='Generate', command=_generate).grid(
+            column=0, row=3, columnspan=2, sticky=(W,E))
+        
+        popup.mainloop()
+        popup.quit()
+        
+        return
+        
+                
 
     
     
@@ -522,9 +590,9 @@ if __name__ == '__main__':
     
     master = MasterModule()
     
-    if not master.check_connections():
-        input('Press enter to exit')
-        sys.exit()
+    # if not master.check_connections():
+    #     input('Press enter to exit')
+    #     sys.exit()
     
     # Load submodules
     arb             = Arb(master)
