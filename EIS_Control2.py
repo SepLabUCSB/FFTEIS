@@ -16,7 +16,9 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import pyvisa
+import pyvisa  # Install NI-VISA separately
+               # pip install pyvisa instead of pyvisa-py
+
 
 # Local modules
 from modules.Arb import Arb
