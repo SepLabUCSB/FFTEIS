@@ -208,6 +208,8 @@ class GUI():
         Label(topleft, text='Oscilloscope: ').grid(column=0, row=0, sticky=(E))
         Label(topleft, text='Connected' if self.master.scope_connected else 'NOT CONNECTED').grid(
             column=1, row=0)
+        Button(topleft, text='STOP', command=self.stop_button).grid(
+            column=2, row=0, sticky=(W,E))
         Label(topleft, text='Func. Gen: ').grid(column=0, row=1, sticky=(E))
         Label(topleft, text='Connected' if self.master.arb_connected else 'NOT CONNECTED').grid(
             column=1, row=1)
@@ -287,8 +289,10 @@ class GUI():
         #####     END __INIT__    #####  
         ###############################
         
-        
-
+    def stop_button(self):    
+        self.master.ABORT = True
+        return
+    
                                                     
     def update_plot(self):
         '''
