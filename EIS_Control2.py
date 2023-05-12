@@ -41,7 +41,6 @@ colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 '''  
 TODO:
 - save time data
-- "save as" last experiment
     
 - make new waveform interface    
 - record by duration
@@ -58,6 +57,7 @@ class MasterModule():
     def __init__(self):
         self.willStop = False
         self.STOP = False
+        self.ABORT = False
         self.modules = [self]
         
         self.experiment = Experiment() # Tracks current Experiment object
@@ -458,11 +458,49 @@ class GUI():
         '''
         self.master.set_experiment(Experiment())
         self.master.experiment.set_waveform(self.master.waveform)
-        self.master.Oscilloscope.record_frame()
+        run(self.master.Oscilloscope.record_frame)
         return
     
     
     def record_duration(self):
+        '''
+        Record for a user-inputted duration
+        '''
+        popup = Toplevel()
+        popup.title('Record for...')
+        popup.attributes('-topmost', 1)
+        
+        frame = Frame(popup)
+        frame.grid(row=0, column=0)
+                        
+        hrs = StringVar(value='0')
+        Entry(frame, textvariable=hrs, width=3).grid(row=0, column=0, sticky=(W,E))
+        Label(frame, text='hr ').grid(column=1, row=0, sticky=(W,E))
+        
+        mins = StringVar(value='0')
+        Entry(frame, textvariable=mins, width=3).grid(row=0, column=2, sticky=(W,E))
+        Label(frame, text='min ').grid(column=3, row=0, sticky=(W,E))
+        
+        secs = StringVar(value='0')
+        Entry(frame, textvariable=secs, width=3).grid(row=0, column=4, sticky=(W,E))
+        Label(frame, text='s ').grid(column=5, row=0, sticky=(W,E))
+        
+        Button(frame, text='Start', command=popup.destroy).grid(
+            row=1, column=2, columnspan=2, sticky=(W,E))
+        
+        popup.wait_window()
+        
+        hrs  = hrs.get()
+        mins = mins.get()
+        secs = secs.get()
+        try:
+            hrs, mins, secs = float(hrs), float(mins), float(secs)
+        except:
+            print('Invalid inputs!')
+            return
+        t = 60*60*hrs + 60*mins + secs
+        if t > 0:
+            run(partial(self.master.Oscilloscope.record_duration, t) )
         return
     
     
@@ -523,7 +561,7 @@ class GUI():
         ending frequency, and number of frequencies. Then generate
         a new waveform and save it to the waveforms directory
         '''
-        popup = Tk()
+        popup = Toplevel()
         popup.title('Make New Waveform')
         popup.attributes('-topmost', 1)
         

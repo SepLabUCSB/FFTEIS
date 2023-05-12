@@ -144,7 +144,18 @@ class Oscilloscope():
         self._is_recording = False
         self.inst.write('TRMD AUTO')
         return volts1, volts2
-        
+    
+    
+    def record_duration(self, t):
+        '''
+        Record continuously for a given duration t
+        '''
+        st = time.time()
+        while time.time() - st < t:
+            if self.master.ABORT:
+                return
+            self.record_frame()
+        return
     
     
     def autocenter_frames(self):
