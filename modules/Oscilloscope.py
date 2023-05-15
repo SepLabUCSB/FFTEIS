@@ -27,7 +27,8 @@ class Oscilloscope():
         self.buffer = ADCDataBuffer
         
         self.inst = None
-        self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDED5R0471::INSTR'
+#        self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDED5R0471::INSTR'
+        self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDEX5R5381::INSTR'
         self._is_recording = False
         
         run(self.initialize)
@@ -155,7 +156,7 @@ class Oscilloscope():
                                  volts1, volts2,
                                  name) )
         self._is_recording = False
-        self.inst.write('TRMD AUTO')
+#        self.inst.write('TRMD AUTO')
         return volts1, volts2
     
     

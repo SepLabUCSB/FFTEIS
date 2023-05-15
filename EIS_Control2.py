@@ -39,7 +39,7 @@ plt.style.use('ffteis.mplstyle')
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 this_dir = modules.__file__[:-20]
-update_file = os.path.join(this_dir, 'update')
+update_file = os.path.join(this_dir, 'update.txt')
 
 
 
@@ -533,7 +533,10 @@ class GUI():
         name = tk.simpledialog.askstring('Save As', 'Input save name: ')
         if not name:
             return
-        self.root.attributes('-topmost', 1)
+        
+        if os.path.exists(update_file):
+            os.remove(update_file)
+        
         # TODO: prompt user to set up NOVA protocol correctly. calculate frame time
         
         # Setup autosave experiment
@@ -544,22 +547,19 @@ class GUI():
         expt = Experiment(name=name)
         expt.set_waveform(self.master.waveform)
         
-        
         # iterate through 
+        self.multiplex_done = False
         i = 0
-        while True:
-            # User inputs concentration. Cancel ends experiment
-            conc = tk.simpledialog.askstring('Next concentration', 'Input next concentration (cancel ends experiment): ')
-            if not conc:
-                break
-            
+        
+        def _multiplex(i, conc):
             # Wait for Autolab trigger
-            while not os.path.exists(updatefile):
+            while not os.path.exists(update_file):
                 if self.master.ABORT:
                     self.master.ABORT = False
                     return
-                self.root.after(1)
-                
+                time.sleep(0.01)
+            
+            
             # Record n frames
             for _ in range(nframes):
                 if self.master.ABORT:
@@ -574,13 +574,22 @@ class GUI():
             avg      = spectra[0].average(spectra[1:])
             avg.name = fname 
             expt.append_spectrum(avg)
+            self.multiplex_done = True
+        
+        while True:
+            # User inputs concentration. Cancel ends experiment
+            if not self.multiplex_done:
+                continue
+            self.multiplex_done = False
+            
+            conc = tk.simpledialog.askstring('Next concentration', 'Input next concentration (cancel ends experiment): ')
+            if not conc:
+                break
+            
+            run(partial(_multiplex, i, conc))
             
             i += 1
             
-            
-                
-        
-        
         return
     
     
@@ -612,6 +621,8 @@ class GUI():
         if not name:
             return
         
+        if os.path.exists(update_file):
+            os.remove(update_file)
         message_popup('Ready to go.\nMake sure NOVA multiplexing protocol is configured for the correct number of sensors.\nClick "OK" before running NOVA program.')
         
         self.master.set_experiment(Experiment(name=name))
@@ -629,17 +640,19 @@ class GUI():
                 
                 # Wait for NOVA to create trigger file indicating new electrode
                 # has been selected
-                while not os.path.exists(updatefile):
+                while not os.path.exists(update_file):
                     continue
-                os.remove(updatefile)
+                
                 
                 # Find correct label
                 this_sensor = sensors[i%len(sensors)]
                 idx = i//len(sensors)
                 
                 # Do recording
-                fname = f'{this_sensor}_{idx:06f}.txt'
-                self.master.Oscilloscope.record_frame(name=fname)            
+                fname = f'{this_sensor}_{idx:06}.txt'
+                self.master.Oscilloscope.record_frame(name=fname)   
+                
+                os.remove(update_file)
                 
                 i += 1
         
