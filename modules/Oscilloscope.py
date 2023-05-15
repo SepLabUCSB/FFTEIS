@@ -31,12 +31,18 @@ class Oscilloscope():
         self._is_recording = False
         
         run(self.initialize)
-        
+    
+    
+    def inst_check(self):
+        if not self.inst:
+            print('Oscilloscope not detected!')
+            return False
+        return True
     
     
     def write(self, cmd):
         # Send command to scope and wait for 
-        if not self.inst:
+        if not self.inst_check():
             return
         self.inst.write(cmd)
         time.sleep(0.2)
@@ -46,6 +52,9 @@ class Oscilloscope():
     def initialize(self):
         if self._name in pyvisa.ResourceManager().list_resources():
             self.inst = pyvisa.ResourceManager().open_resource(self._name)
+        
+        if not self.inst_check():
+            return
         
         self._is_recording = True
         # Write default settings
@@ -104,6 +113,9 @@ class Oscilloscope():
         # Record one frame of data.
         # Returns raw voltages
         
+        if not self.inst_check():
+            return
+        
         if self._is_recording:
             return
         self._is_recording = True
@@ -150,6 +162,8 @@ class Oscilloscope():
         '''
         Record continuously for a given duration t
         '''
+        if not self.inst_check():
+            return
         st = time.time()
         while time.time() - st < t:
             if self.master.ABORT:
