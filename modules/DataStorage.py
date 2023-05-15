@@ -45,13 +45,14 @@ class Experiment():
     
 class ImpedanceSpectrum():
     
-    def __init__(self, freqs, Z, phase, experiment, timestamp):
+    def __init__(self, freqs, Z, phase, experiment, timestamp, name=None):
         self.timestamp = time.time()
         self.freqs     = freqs
         self.Z         = Z
         self.phase     = phase
         self.experiment= experiment # Associated Experiment object
         self.timestamp = timestamp
+        self.name      = name
         
     def correct_Z(self, Z_factors, phase_factors):
         
@@ -72,6 +73,8 @@ class ImpedanceSpectrum():
         os.makedirs(path, exist_ok=True)
         i    = self.experiment.i
         
+        if self.name:
+            name = self.name
         if not name:
             name = f'{i:06}.txt'
         

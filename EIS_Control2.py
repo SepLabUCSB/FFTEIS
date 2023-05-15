@@ -28,6 +28,7 @@ from modules.DataStorage import Experiment, ImpedanceSpectrum
 from modules.Oscilloscope import Oscilloscope
 from modules.Waveform import Waveform
 from modules.funcs import nearest, run
+from modules.gui_utils import ask_duration_popup
 
 default_stdout = sys.stdout
 default_stdin  = sys.stdin
@@ -50,7 +51,7 @@ TODO:
 - x vs t plot
 '''
 
-
+updatefile = 'update'
 
 class MasterModule():
     
@@ -124,16 +125,14 @@ class MasterModule():
         
         if not self.scope_connected:
             print('Oscilloscope not found! Make sure SDS1202X-E is powered on and connected to PC.')
-            return False
         if not self.arb_connected:
             print('Waveform generator not found! Make sure Rigol DG812 is powered on and connected to PC.')
-            return False
         if not self.NOVA_connected:
             print('NOVA not detected! Make sure Nova is running.')
-            return False
         
-        return True
-            
+        if (self.scope_connected and self.arb_connected and self.NOVA_connected):
+            return True
+        return False    
         
                 
     
@@ -199,6 +198,7 @@ class GUI():
         console.grid(row=0, column=0, sticky=(N,S,E,W))
         pl = PrintLogger(console)
         sys.stdout = pl
+        
         
         
         ### TOP LEFT: Control buttons ###
@@ -284,7 +284,8 @@ class GUI():
         Button(topright, text='Create New Waveform', command=
                self.create_new_waveform).grid(column=0, row=4,
                                               columnspan=2, sticky=(W,E))
-                                                    
+                              
+        
         ###############################
         #####     END __INIT__    #####  
         ###############################
@@ -470,41 +471,17 @@ class GUI():
         '''
         Record for a user-inputted duration
         '''
-        popup = Toplevel()
-        popup.title('Record for...')
-        popup.attributes('-topmost', 1)
-        
-        frame = Frame(popup)
-        frame.grid(row=0, column=0)
-                        
-        hrs = StringVar(value='0')
-        Entry(frame, textvariable=hrs, width=3).grid(row=0, column=0, sticky=(W,E))
-        Label(frame, text='hr ').grid(column=1, row=0, sticky=(W,E))
-        
-        mins = StringVar(value='0')
-        Entry(frame, textvariable=mins, width=3).grid(row=0, column=2, sticky=(W,E))
-        Label(frame, text='min ').grid(column=3, row=0, sticky=(W,E))
-        
-        secs = StringVar(value='0')
-        Entry(frame, textvariable=secs, width=3).grid(row=0, column=4, sticky=(W,E))
-        Label(frame, text='s ').grid(column=5, row=0, sticky=(W,E))
-        
-        Button(frame, text='Start', command=popup.destroy).grid(
-            row=1, column=2, columnspan=2, sticky=(W,E))
-        
-        popup.wait_window()
-        
-        hrs  = hrs.get()
-        mins = mins.get()
-        secs = secs.get()
-        try:
-            hrs, mins, secs = float(hrs), float(mins), float(secs)
-        except:
-            print('Invalid inputs!')
+        t = ask_duration_popup()
+        if t <= 0:
             return
-        t = 60*60*hrs + 60*mins + secs
-        if t > 0:
-            run(partial(self.master.Oscilloscope.record_duration, t) )
+        
+        name = tk.simpledialog.askstring('Save As', 'Input save name: ')
+        if not name:
+            return
+        
+        self.master.set_experiment(Experiment(name=name))
+        self.master.experiment.set_waveform(self.master.waveform)
+        run(partial(self.master.Oscilloscope.record_duration, t) )
         return
     
     
@@ -525,6 +502,56 @@ class GUI():
     
     
     def multiplex_invivo(self):
+        '''
+        Continuously cycles between several sensors for a user-defined duration
+        '''
+        
+        # Ask user for time, # of sensors, sensor labels
+        t = ask_duration_popup()
+        if not t > 0:
+            return
+        
+        n_sensors = tk.simpledialog.askinteger('Sensors to multiplex', 'Input number of sensors to toggle between: ')
+        if not n_sensors > 0:
+            return
+        
+        sensors = tk.simpledialog.askstring('Sensor names', 'Input labels for each sensor (comma separated): ')
+        sensors = sensors.split(',')
+        if len(sensors) != n_sensors:
+            print(f'Could not identify {n_sensors} names in input string: {sensors}')
+            return
+        
+        name = tk.simpledialog.askstring('Save As', 'Input save name: ')
+        if not name:
+            return
+        
+        self.master.set_experiment(Experiment(name=name))
+        self.master.experiment.set_waveform(self.master.waveform)
+        
+        st = time.time()
+        i = 0
+        while time.time() - st < t:
+            if self.master.ABORT:
+                self.master.ABORT = False
+                return
+            
+            # Wait for NOVA to create trigger file indicating new electrode
+            # has been selected
+            while not os.path.exists(updatefile):
+                continue
+            os.remove(updatefile)
+            
+            # Find correct label
+            this_sensor = sensors[i%len(sensors)]
+            idx = i//len(sensors)
+            
+            # Do recording
+            fname = f'{this_sensor}_{idx:06f}.txt'
+            self.master.Oscilloscope.record_frame(name=fname)            
+            
+            i += 1
+        
+        
         return
     
     

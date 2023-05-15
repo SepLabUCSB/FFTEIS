@@ -109,7 +109,7 @@ class Oscilloscope():
         
     
     
-    def record_frame(self, timeout = 10, add_to_buffer=True):
+    def record_frame(self, timeout = 10, add_to_buffer=True, name=None):
         # Record one frame of data.
         # Returns raw voltages
         
@@ -152,7 +152,8 @@ class Oscilloscope():
         if add_to_buffer:
             self.buffer.append( (time.time(), 
                                  recording_params, 
-                                 volts1, volts2) )
+                                 volts1, volts2,
+                                 name) )
         self._is_recording = False
         self.inst.write('TRMD AUTO')
         return volts1, volts2
