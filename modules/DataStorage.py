@@ -103,5 +103,6 @@ class ImpedanceSpectrum():
         phases = np.array([np.array(spec.phase) for spec in spectra])
         phase  = np.mean(phases, axis=0)
         
-        return ImpedanceSpectrum(self.freqs, Z, phase, self.experiment)
+        return ImpedanceSpectrum(self.freqs, Z, phase, self.experiment,
+                                 self.timestamp, self.name)
         

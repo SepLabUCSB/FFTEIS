@@ -21,6 +21,7 @@ import pyvisa  # Install NI-VISA separately
 
 
 # Local modules
+import modules
 from modules.Arb import Arb
 from modules.Buffer import ADCDataBuffer
 from modules.DataProcessor import DataProcessor
@@ -34,9 +35,12 @@ default_stdout = sys.stdout
 default_stdin  = sys.stdin
 default_stderr = sys.stderr
 
-# matplotlib.use('TkAgg')
 plt.style.use('ffteis.mplstyle')
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+this_dir = modules.__file__[:-20]
+update_file = os.path.join(this_dir, 'update')
+
 
 
 '''  
@@ -49,9 +53,11 @@ TODO:
 - invivo multiplexing
 
 - x vs t plot
+
+Tk input prompts disappear behind main window??
 '''
 
-updatefile = 'update'
+
 
 class MasterModule():
     
@@ -506,10 +512,74 @@ class GUI():
         '''
         
         # Get number of sensors
+        self.root.attributes('-topmost', 0)
+        n_sensors = tk.simpledialog.askinteger('Sensors to multiplex', 'Input number of sensors to toggle between: ')
+        if not n_sensors > 0:
+            return
         
-        # Ask for recording time per sensor
+        sensors = tk.simpledialog.askstring('Sensor names', 'Input labels for each sensor (comma separated): ',
+                                            initialvalue= ','.join([str(i) for i in range(n_sensors)]))
+        sensors = sensors.split(',')
+        if len(sensors) != n_sensors:
+            print(f'Could not identify {n_sensors} names in input string: {sensors}')
+            return
+        # Ask for recording frames per sensor
+        nframes = tk.simpledialog.askinteger('Averaging', 'Average over frames: ',
+                                              initialvalue=5)
+        if nframes < 1:
+            return
+        
+        # Ask for save name
+        name = tk.simpledialog.askstring('Save As', 'Input save name: ')
+        if not name:
+            return
+        self.root.attributes('-topmost', 1)
+        # TODO: prompt user to set up NOVA protocol correctly. calculate frame time
+        
+        # Setup autosave experiment
+        self.master.set_experiment(Experiment())
+        self.master.experiment.set_waveform(self.master.waveform)
+        
+        # Setup Experiment with averaged results
+        expt = Experiment(name=name)
+        expt.set_waveform(self.master.waveform)
+        
         
         # iterate through 
+        i = 0
+        while True:
+            # User inputs concentration. Cancel ends experiment
+            conc = tk.simpledialog.askstring('Next concentration', 'Input next concentration (cancel ends experiment): ')
+            if not conc:
+                break
+            
+            # Wait for Autolab trigger
+            while not os.path.exists(updatefile):
+                if self.master.ABORT:
+                    self.master.ABORT = False
+                    return
+                self.root.after(1)
+                
+            # Record n frames
+            for _ in range(nframes):
+                if self.master.ABORT:
+                    self.master.ABORT = False
+                    return
+                self.master.Oscilloscope.record_frame()
+            
+            sensor = sensors[i%len(sensors)]
+            fname = f'{sensor}_{conc}.txt'
+            
+            spectra  = self.master.experiment.spectra[-nframes:]
+            avg      = spectra[0].average(spectra[1:])
+            avg.name = fname 
+            expt.append_spectrum(avg)
+            
+            i += 1
+            
+            
+                
+        
         
         return
     
