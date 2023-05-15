@@ -41,7 +41,7 @@ colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 '''  
 TODO:
-- save time data
+- save metadata
     
 - make new waveform interface    
 - record by duration
@@ -318,12 +318,14 @@ class GUI():
                 
                 # Set axis labels
                 self.ax.set_xlabel('Frequency/ Hz')
-                self.ax2.set_ylabel(r'Phase/ $\degree$', color='orange')
                 self.ax.set_ylabel(r'|Z|/ $\Omega$', color=colors[0])
+                self.ax2.set_ylabel(r'Phase/ $\degree$', color='orange')
+                self.ax2.yaxis.set_label_position('right')
                 
                 # Set ticks and axis limits
                 self.ax.set_ylim(min(Z)-1.05*min(Z), 1.05*max(Z))
                 self.ax.set_xscale('log')
+                self.ax2.set_ylim(min(phase)-5, max(phase)+5)
                 self.ax2.set_yticks([-180, -150, -120, -90, -60, -30, 0,
                                      30, 60, 90, 120, 150, 180])
                 self.ax2.set_ylim(min(phase)-10, max(phase)+10)
