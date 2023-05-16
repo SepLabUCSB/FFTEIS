@@ -16,6 +16,8 @@ class Experiment():
         else:
             path = os.path.join(path, 'autosave')
             path = os.path.join(path, datetime.now().strftime('%H-%M-%S'))
+        
+        os.makedirs(path, exist_ok=True)
             
         self.path     = path    # Save path
         self.time_file= os.path.join(path, '!times.txt')
@@ -88,6 +90,8 @@ class ImpedanceSpectrum():
         d.to_csv(save_path, columns = ['f', 're', 'im'],
                  header = ['<Frequency>', '<Re(Z)>', '<Im(Z)>'], 
                  sep = '\t', index = False, encoding='ascii')
+        if 'autosave' not in save_path:
+            print(f'Saved as {save_path}')
         
     
     def average(self, spectra:list):

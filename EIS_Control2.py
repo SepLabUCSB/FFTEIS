@@ -28,6 +28,7 @@ from modules.DataProcessor import DataProcessor
 from modules.DataStorage import Experiment, ImpedanceSpectrum
 from modules.Oscilloscope import Oscilloscope
 from modules.Waveform import Waveform
+from modules.TitrationMultiplexer import TitrationMultiplexer
 from modules.funcs import nearest, run
 from modules.gui_utils import ask_duration_popup, message_popup, confirm_dialog
 
@@ -105,7 +106,13 @@ class MasterModule():
         for module in self.modules:
             if hasattr(module, 'stop'):
                 module.stop()
-                
+    
+    def make_ready(self):
+        '''
+        Called in its own thread. Waits 3 s then cancels the ABORT command
+        '''
+        time.sleep(3)
+        self.ABORT = False
                 
     def set_experiment(self, Experiment):
         self.experiment = Experiment
@@ -504,140 +511,39 @@ class GUI():
             temp_expt.append_spectrum(spectrum)
         return
     
-    
     def multiplex_titration(self):
         '''
-        Do a titration-type experiment. Cycle between several sensors then wait,
-        prompt user to adjust the solution concentration and input the new value
+        Titration-style multiplexing:
+            1. Prompt user for concentration
+            2. Wait for user to adjust solution concentration. Waits for
+               "OK" clicked in NOVA software - this creates a trigger file
+            3. Record a set number of frames for the first sensor. Average
+               them together and save it.
+            4. Wait for NOVA trigger to indicate switching to the next multiplexed
+               sensor.
+            5. Repeat recording, averaging, saving for each sensor.
+            6. Prompt the user for the next concentration
         '''
-        
-        # Get number of sensors
-        self.root.attributes('-topmost', 0)
-        n_sensors = tk.simpledialog.askinteger('Sensors to multiplex', 'Input number of sensors to toggle between: ')
-        if not n_sensors > 0:
-            return
-        
-        sensors = tk.simpledialog.askstring('Sensor names', 'Input labels for each sensor (comma separated): ',
-                                            initialvalue= ','.join([str(i) for i in range(n_sensors)]))
-        sensors = sensors.split(',')
-        if len(sensors) != n_sensors:
-            print(f'Could not identify {n_sensors} names in input string: {sensors}')
-            return
-        # Ask for recording frames per sensor
-        nframes = tk.simpledialog.askinteger('Averaging', 'Average over frames: ',
-                                              initialvalue=5)
-        if nframes < 1:
-            return
-        
-        # Ask for save name
-        name = tk.simpledialog.askstring('Save As', 'Input save name: ')
-        if not name:
-            return
         
         if os.path.exists(update_file):
             os.remove(update_file)
         
-        # TODO: prompt user to set up NOVA protocol correctly. calculate frame time
-        
-        # Setup autosave experiment
         self.master.set_experiment(Experiment())
         self.master.experiment.set_waveform(self.master.waveform)
         
-        # Setup Experiment with averaged results
-        expt = Experiment(name=name)
+        expt = Experiment(name = 'temp')
         expt.set_waveform(self.master.waveform)
         
-        # iterate through
-        i = 0
         
-        def _multiplex():
-            # Wait for Autolab trigger
-            # print('triggered multiplex')        
-            # while not os.path.exists(update_file):
-            #     if self.master.ABORT:
-            #         self.master.ABORT = False
-            #         return
-            #     time.sleep(0.01)
-            
-            # self.master.Oscilloscope.record_duration(8)
-            for _ in range(nframes):
-                self.master.Oscilloscope.record_frame()
-            
-            # TODO: maybe get thread object and call thread.join() to wait for it to finish?
-            # or thread.is_alive() to determine if its still running
-            return
-            
+        multiplexer = TitrationMultiplexer(self.master, self.root,
+                                           update_file)
         
-        for _ in range(2):
-            conc = tk.simpledialog.askstring('Next concentration', 'Input next concentration (cancel ends experiment): ')
-            if not conc:
-                break
-            # run(partial(self.master.Oscilloscope.record_duration, 8) )
-            run(_multiplex)
-            self.root.after(15000)
-            sensor = sensors[i%len(sensors)]
-            fname = f'{sensor}_{conc}.txt'
-            
-            spectra  = self.master.experiment.spectra[-nframes:]
-            avg      = spectra[0].average(spectra[1:])
-            avg.name = fname 
-            expt.append_spectrum(avg)
-            self.multiplex_done = True
-            i += 1
-            # for _ in range(5):
-            #     if self.master.ABORT:
-            #         self.master.ABORT = False
-            #         return
-            #     while self.master.Oscilloscope._is_recording:
-            #         time.sleep(0.1)
-            #     run(self.master.Oscilloscope.record_frame)
-            
-            # sensor = sensors[i%len(sensors)]
-            # fname = f'{sensor}_{conc}.txt'
-            
-            # spectra  = self.master.experiment.spectra[-nframes:]
-            # avg      = spectra[0].average(spectra[1:])
-            # avg.name = fname 
-            # expt.append_spectrum(avg)
+        # Get user inputs
+        ready = multiplexer.prompts()
+        if ready:
+            multiplexer.check_action()
         
-        
-        def _multiplex(i, conc):
-            # Wait for Autolab trigger
-            print('triggered multiplex')
-            self.multiplex_done = True
-            return
-        
-            while not os.path.exists(update_file):
-                if self.master.ABORT:
-                    self.master.ABORT = False
-                    return
-                time.sleep(0.01)
-            
-            
-            # Record n frames
-            for _ in range(5):
-                if self.master.ABORT:
-                    self.master.ABORT = False
-                    return
-                print(_)
-                # self.master.Oscilloscope.record_frame()
-            
-            sensor = sensors[i%len(sensors)]
-            fname = f'{sensor}_{conc}.txt'
-            
-            spectra  = self.master.experiment.spectra[-nframes:]
-            avg      = spectra[0].average(spectra[1:])
-            avg.name = fname 
-            expt.append_spectrum(avg)
-            self.multiplex_done = True
-        
-        # # User inputs concentration. Cancel ends experiment
-        # conc = tk.simpledialog.askstring('Next concentration', 'Input next concentration (cancel ends experiment): ')
-        # run(partial(_multiplex, i, conc))
-        
-            
-        return
-    
+
     
     def multiplex_invivo(self):
         '''

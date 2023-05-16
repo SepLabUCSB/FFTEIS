@@ -175,6 +175,19 @@ class Oscilloscope():
         return
     
     
+    def record_n(self, n):
+        '''
+        Record n frames sequentially
+        '''
+        if not self.inst_check():
+            return
+        for _ in range(n):
+            if self.master.ABORT:
+                run(self.master.make_ready)
+                return
+            self.record_frame()
+        
+    
     def autocenter_frames(self):
         # Automatically adjust vertical divisions and vertical offset
         # so that each trace is centered and fills the screen
