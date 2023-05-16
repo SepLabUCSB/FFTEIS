@@ -547,12 +547,66 @@ class GUI():
         expt = Experiment(name=name)
         expt.set_waveform(self.master.waveform)
         
-        # iterate through 
-        self.multiplex_done = False
+        # iterate through
         i = 0
+        
+        def _multiplex():
+            # Wait for Autolab trigger
+            # print('triggered multiplex')        
+            # while not os.path.exists(update_file):
+            #     if self.master.ABORT:
+            #         self.master.ABORT = False
+            #         return
+            #     time.sleep(0.01)
+            
+            # self.master.Oscilloscope.record_duration(8)
+            for _ in range(nframes):
+                self.master.Oscilloscope.record_frame()
+            
+            # TODO: maybe get thread object and call thread.join() to wait for it to finish?
+            # or thread.is_alive() to determine if its still running
+            return
+            
+        
+        for _ in range(2):
+            conc = tk.simpledialog.askstring('Next concentration', 'Input next concentration (cancel ends experiment): ')
+            if not conc:
+                break
+            # run(partial(self.master.Oscilloscope.record_duration, 8) )
+            run(_multiplex)
+            self.root.after(15000)
+            sensor = sensors[i%len(sensors)]
+            fname = f'{sensor}_{conc}.txt'
+            
+            spectra  = self.master.experiment.spectra[-nframes:]
+            avg      = spectra[0].average(spectra[1:])
+            avg.name = fname 
+            expt.append_spectrum(avg)
+            self.multiplex_done = True
+            i += 1
+            # for _ in range(5):
+            #     if self.master.ABORT:
+            #         self.master.ABORT = False
+            #         return
+            #     while self.master.Oscilloscope._is_recording:
+            #         time.sleep(0.1)
+            #     run(self.master.Oscilloscope.record_frame)
+            
+            # sensor = sensors[i%len(sensors)]
+            # fname = f'{sensor}_{conc}.txt'
+            
+            # spectra  = self.master.experiment.spectra[-nframes:]
+            # avg      = spectra[0].average(spectra[1:])
+            # avg.name = fname 
+            # expt.append_spectrum(avg)
+        
         
         def _multiplex(i, conc):
             # Wait for Autolab trigger
+            print('triggered multiplex')
+            self.multiplex_done = True
+            return
+        
             while not os.path.exists(update_file):
                 if self.master.ABORT:
                     self.master.ABORT = False
@@ -561,11 +615,12 @@ class GUI():
             
             
             # Record n frames
-            for _ in range(nframes):
+            for _ in range(5):
                 if self.master.ABORT:
                     self.master.ABORT = False
                     return
-                self.master.Oscilloscope.record_frame()
+                print(_)
+                # self.master.Oscilloscope.record_frame()
             
             sensor = sensors[i%len(sensors)]
             fname = f'{sensor}_{conc}.txt'
@@ -576,19 +631,10 @@ class GUI():
             expt.append_spectrum(avg)
             self.multiplex_done = True
         
-        while True:
-            # User inputs concentration. Cancel ends experiment
-            if not self.multiplex_done:
-                continue
-            self.multiplex_done = False
-            
-            conc = tk.simpledialog.askstring('Next concentration', 'Input next concentration (cancel ends experiment): ')
-            if not conc:
-                break
-            
-            run(partial(_multiplex, i, conc))
-            
-            i += 1
+        # # User inputs concentration. Cancel ends experiment
+        # conc = tk.simpledialog.askstring('Next concentration', 'Input next concentration (cancel ends experiment): ')
+        # run(partial(_multiplex, i, conc))
+        
             
         return
     
