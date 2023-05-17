@@ -48,12 +48,9 @@ update_file = os.path.join(this_dir, 'update.txt')
 TODO:
 - save metadata
     
-- make new waveform interface    
-- record by duration
-- titration multiplexing
-- invivo multiplexing
-
 - x vs t plot
+
+- implement fitting
 
 Tk input prompts disappear behind main window??
 '''
