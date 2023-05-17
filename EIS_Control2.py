@@ -29,6 +29,7 @@ from modules.DataStorage import Experiment, ImpedanceSpectrum
 from modules.Oscilloscope import Oscilloscope
 from modules.Waveform import Waveform
 from modules.TitrationMultiplexer import TitrationMultiplexer
+from modules.MonitorWindow import MonitorWindow
 from modules.funcs import nearest, run
 from modules.gui_utils import ask_duration_popup, message_popup, confirm_dialog
 
@@ -494,6 +495,8 @@ class GUI():
         self.master.set_experiment(Experiment(name=name))
         self.master.experiment.set_waveform(self.master.waveform)
         run(partial(self.master.Oscilloscope.record_duration, t) )
+        mw = MonitorWindow(self.master, self.root)
+        mw.update()
         return
     
     
