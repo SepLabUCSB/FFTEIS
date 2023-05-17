@@ -21,27 +21,32 @@ import pyvisa  # Install NI-VISA separately
 
 
 # Local modules
+import modules
 from modules.Arb import Arb
 from modules.Buffer import ADCDataBuffer
 from modules.DataProcessor import DataProcessor
 from modules.DataStorage import Experiment, ImpedanceSpectrum
 from modules.Oscilloscope import Oscilloscope
 from modules.Waveform import Waveform
+from modules.TitrationMultiplexer import TitrationMultiplexer
 from modules.funcs import nearest, run
+from modules.gui_utils import ask_duration_popup, message_popup, confirm_dialog
 
 default_stdout = sys.stdout
 default_stdin  = sys.stdin
 default_stderr = sys.stderr
 
-# matplotlib.use('TkAgg')
 plt.style.use('ffteis.mplstyle')
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+this_dir = modules.__file__[:-20]
+update_file = os.path.join(this_dir, 'update.txt')
+
 
 
 '''  
 TODO:
-- save time data
-- "save as" last experiment
+- save metadata
     
 - make new waveform interface    
 - record by duration
@@ -49,6 +54,8 @@ TODO:
 - invivo multiplexing
 
 - x vs t plot
+
+Tk input prompts disappear behind main window??
 '''
 
 
@@ -58,6 +65,7 @@ class MasterModule():
     def __init__(self):
         self.willStop = False
         self.STOP = False
+        self.ABORT = False
         self.modules = [self]
         
         self.experiment = Experiment() # Tracks current Experiment object
@@ -98,7 +106,13 @@ class MasterModule():
         for module in self.modules:
             if hasattr(module, 'stop'):
                 module.stop()
-                
+    
+    def make_ready(self):
+        '''
+        Called in its own thread. Waits 3 s then cancels the ABORT command
+        '''
+        time.sleep(3)
+        self.ABORT = False
                 
     def set_experiment(self, Experiment):
         self.experiment = Experiment
@@ -124,16 +138,14 @@ class MasterModule():
         
         if not self.scope_connected:
             print('Oscilloscope not found! Make sure SDS1202X-E is powered on and connected to PC.')
-            return False
         if not self.arb_connected:
             print('Waveform generator not found! Make sure Rigol DG812 is powered on and connected to PC.')
-            return False
         if not self.NOVA_connected:
             print('NOVA not detected! Make sure Nova is running.')
-            return False
         
-        return True
-            
+        if (self.scope_connected and self.arb_connected and self.NOVA_connected):
+            return True
+        return False    
         
                 
     
@@ -201,6 +213,7 @@ class GUI():
         sys.stdout = pl
         
         
+        
         ### TOP LEFT: Control buttons ###
         
         # Check if SDS1202X-E and DG812 are connected and on  
@@ -208,6 +221,8 @@ class GUI():
         Label(topleft, text='Oscilloscope: ').grid(column=0, row=0, sticky=(E))
         Label(topleft, text='Connected' if self.master.scope_connected else 'NOT CONNECTED').grid(
             column=1, row=0)
+        Button(topleft, text='STOP', command=self.stop_button).grid(
+            column=2, row=0, sticky=(W,E))
         Label(topleft, text='Func. Gen: ').grid(column=0, row=1, sticky=(E))
         Label(topleft, text='Connected' if self.master.arb_connected else 'NOT CONNECTED').grid(
             column=1, row=1)
@@ -282,13 +297,16 @@ class GUI():
         Button(topright, text='Create New Waveform', command=
                self.create_new_waveform).grid(column=0, row=4,
                                               columnspan=2, sticky=(W,E))
-                                                    
+                              
+        
         ###############################
         #####     END __INIT__    #####  
         ###############################
         
-        
-
+    def stop_button(self):    
+        self.master.ABORT = True
+        return
+    
                                                     
     def update_plot(self):
         '''
@@ -313,12 +331,14 @@ class GUI():
                 
                 # Set axis labels
                 self.ax.set_xlabel('Frequency/ Hz')
-                self.ax2.set_ylabel(r'Phase/ $\degree$', color='orange')
                 self.ax.set_ylabel(r'|Z|/ $\Omega$', color=colors[0])
+                self.ax2.set_ylabel(r'Phase/ $\degree$', color='orange')
+                self.ax2.yaxis.set_label_position('right')
                 
                 # Set ticks and axis limits
                 self.ax.set_ylim(min(Z)-1.05*min(Z), 1.05*max(Z))
                 self.ax.set_xscale('log')
+                self.ax2.set_ylim(min(phase)-5, max(phase)+5)
                 self.ax2.set_yticks([-180, -150, -120, -90, -60, -30, 0,
                                      30, 60, 90, 120, 150, 180])
                 self.ax2.set_ylim(min(phase)-10, max(phase)+10)
@@ -458,11 +478,25 @@ class GUI():
         '''
         self.master.set_experiment(Experiment())
         self.master.experiment.set_waveform(self.master.waveform)
-        self.master.Oscilloscope.record_frame()
+        run(self.master.Oscilloscope.record_frame)
         return
     
     
     def record_duration(self):
+        '''
+        Record for a user-inputted duration
+        '''
+        t = ask_duration_popup()
+        if t <= 0:
+            return
+        
+        name = tk.simpledialog.askstring('Save As', 'Input save name: ')
+        if not name:
+            return
+        
+        self.master.set_experiment(Experiment(name=name))
+        self.master.experiment.set_waveform(self.master.waveform)
+        run(partial(self.master.Oscilloscope.record_duration, t) )
         return
     
     
@@ -477,12 +511,105 @@ class GUI():
             temp_expt.append_spectrum(spectrum)
         return
     
-    
     def multiplex_titration(self):
-        return
-    
+        '''
+        Titration-style multiplexing:
+            1. Prompt user for concentration
+            2. Wait for user to adjust solution concentration. Waits for
+               "OK" clicked in NOVA software - this creates a trigger file
+            3. Record a set number of frames for the first sensor. Average
+               them together and save it.
+            4. Wait for NOVA trigger to indicate switching to the next multiplexed
+               sensor.
+            5. Repeat recording, averaging, saving for each sensor.
+            6. Prompt the user for the next concentration
+        '''
+        
+        if os.path.exists(update_file):
+            os.remove(update_file)
+        
+        self.master.set_experiment(Experiment())
+        self.master.experiment.set_waveform(self.master.waveform)
+        
+        expt = Experiment(name = 'temp')
+        expt.set_waveform(self.master.waveform)
+        
+        
+        multiplexer = TitrationMultiplexer(self.master, self.root,
+                                           update_file)
+        
+        # Get user inputs
+        ready = multiplexer.prompts()
+        if ready:
+            multiplexer.check_action()
+        
+
     
     def multiplex_invivo(self):
+        '''
+        Continuously cycle between several sensors for a user-defined duration.
+        
+        Timing is dictated by Autolab creating designated update file,
+        which triggers scope recording here
+        '''
+        
+        # Ask user for time, # of sensors, sensor labels
+        t = ask_duration_popup()
+        if not t > 0:
+            return
+        
+        n_sensors = tk.simpledialog.askinteger('Sensors to multiplex', 'Input number of sensors to toggle between: ')
+        if not n_sensors > 0:
+            return
+        
+        sensors = tk.simpledialog.askstring('Sensor names', 'Input labels for each sensor (comma separated): ',
+                                            initialvalue= ','.join([str(i) for i in range(n_sensors)]))
+        sensors = sensors.split(',')
+        if len(sensors) != n_sensors:
+            print(f'Could not identify {n_sensors} names in input string: {sensors}')
+            return
+        
+        name = tk.simpledialog.askstring('Save As', 'Input save name: ')
+        if not name:
+            return
+        
+        if os.path.exists(update_file):
+            os.remove(update_file)
+        message_popup('Ready to go.\nMake sure NOVA multiplexing protocol is configured for the correct number of sensors.\nClick "OK" before running NOVA program.')
+        
+        self.master.set_experiment(Experiment(name=name))
+        self.master.experiment.set_waveform(self.master.waveform)
+        
+
+        def _multiplex():
+            st = time.time()
+            i = 0
+            while time.time() - st < t:
+                if self.master.ABORT:
+                    print('Stopping multiplex experiment')
+                    self.master.ABORT = False
+                    return
+                
+                # Wait for NOVA to create trigger file indicating new electrode
+                # has been selected
+                while not os.path.exists(update_file):
+                    continue
+                
+                
+                # Find correct label
+                this_sensor = sensors[i%len(sensors)]
+                idx = i//len(sensors)
+                
+                # Do recording
+                fname = f'{this_sensor}_{idx:06}.txt'
+                self.master.Oscilloscope.record_frame(name=fname)   
+                
+                os.remove(update_file)
+                
+                i += 1
+        
+        run(_multiplex)
+
         return
     
     
@@ -523,7 +650,7 @@ class GUI():
         ending frequency, and number of frequencies. Then generate
         a new waveform and save it to the waveforms directory
         '''
-        popup = Tk()
+        popup = Toplevel()
         popup.title('Make New Waveform')
         popup.attributes('-topmost', 1)
         

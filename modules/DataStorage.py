@@ -16,6 +16,8 @@ class Experiment():
         else:
             path = os.path.join(path, 'autosave')
             path = os.path.join(path, datetime.now().strftime('%H-%M-%S'))
+        
+        os.makedirs(path, exist_ok=True)
             
         self.path     = path    # Save path
         self.time_file= os.path.join(path, '!times.txt')
@@ -45,13 +47,14 @@ class Experiment():
     
 class ImpedanceSpectrum():
     
-    def __init__(self, freqs, Z, phase, experiment, timestamp):
+    def __init__(self, freqs, Z, phase, experiment, timestamp, name=None):
         self.timestamp = time.time()
         self.freqs     = freqs
         self.Z         = Z
         self.phase     = phase
         self.experiment= experiment # Associated Experiment object
         self.timestamp = timestamp
+        self.name      = name
         
     def correct_Z(self, Z_factors, phase_factors):
         
@@ -72,6 +75,8 @@ class ImpedanceSpectrum():
         os.makedirs(path, exist_ok=True)
         i    = self.experiment.i
         
+        if self.name:
+            name = self.name
         if not name:
             name = f'{i:06}.txt'
         
@@ -85,6 +90,8 @@ class ImpedanceSpectrum():
         d.to_csv(save_path, columns = ['f', 're', 'im'],
                  header = ['<Frequency>', '<Re(Z)>', '<Im(Z)>'], 
                  sep = '\t', index = False, encoding='ascii')
+        if 'autosave' not in save_path:
+            print(f'Saved as {save_path}')
         
     
     def average(self, spectra:list):
@@ -100,5 +107,6 @@ class ImpedanceSpectrum():
         phases = np.array([np.array(spec.phase) for spec in spectra])
         phase  = np.mean(phases, axis=0)
         
-        return ImpedanceSpectrum(self.freqs, Z, phase, self.experiment)
+        return ImpedanceSpectrum(self.freqs, Z, phase, self.experiment,
+                                 self.timestamp, self.name)
         

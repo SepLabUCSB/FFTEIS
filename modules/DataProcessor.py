@@ -46,13 +46,14 @@ class DataProcessor():
     
                     
     
-    def make_spectrum(self, timestamp, freqs, Z):
+    def make_spectrum(self, timestamp, freqs, Z, name):
         spectrum = ImpedanceSpectrum(
             freqs       = freqs,
             Z           = Z,
             phase       = np.angle(Z, deg=True),
             experiment  = self.master.experiment,
-            timestamp   = timestamp
+            timestamp   = timestamp,
+            name        = name
             )
         if self.master.GUI.ref_correction_bool.get():
             spectrum.correct_Z(self.Z_factors, self.phase_factors)
@@ -60,12 +61,13 @@ class DataProcessor():
 
                 
                
-    def process(self, timestamp, recording_params, volts1, volts2):
+    def process(self, timestamp, recording_params, volts1, volts2, name):
         '''
         timestamp: time.time() output when frame was recorded
         recording_params: dict, importantly includes sampling rate and tdiv
         volts1: np.array of raw voltage output from CH 1 (voltage)
         volts2: np.array of raw voltage output from CH 2 (current)
+        name: string or None
         
         We need to use the current range (set in NOVA) to convert volts2 back
         into current. Then Fourier transform both and filter to only keep
@@ -108,7 +110,7 @@ class DataProcessor():
         freqs = freqs[idxs]
         ft_v  = ft_v[idxs]
         ft_i  = ft_i[idxs]
-        self.make_spectrum(timestamp, freqs, ft_v/ft_i)
+        self.make_spectrum(timestamp, freqs, ft_v/ft_i, name)
         
         
     

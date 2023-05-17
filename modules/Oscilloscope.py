@@ -27,16 +27,23 @@ class Oscilloscope():
         self.buffer = ADCDataBuffer
         
         self.inst = None
-        self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDED5R0471::INSTR'
+        self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDED5R0471::INSTR'   #sepunaru
+        # self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDEX5R5381::INSTR' #plaxco
         self._is_recording = False
         
         run(self.initialize)
-        
+    
+    
+    def inst_check(self):
+        if not self.inst:
+            print('Oscilloscope not detected!')
+            return False
+        return True
     
     
     def write(self, cmd):
         # Send command to scope and wait for 
-        if not self.inst:
+        if not self.inst_check():
             return
         self.inst.write(cmd)
         time.sleep(0.2)
@@ -46,6 +53,9 @@ class Oscilloscope():
     def initialize(self):
         if self._name in pyvisa.ResourceManager().list_resources():
             self.inst = pyvisa.ResourceManager().open_resource(self._name)
+        
+        if not self.inst_check():
+            return
         
         self._is_recording = True
         # Write default settings
@@ -100,9 +110,12 @@ class Oscilloscope():
         
     
     
-    def record_frame(self, timeout = 10, add_to_buffer=True):
+    def record_frame(self, timeout = 10, add_to_buffer=True, name=None):
         # Record one frame of data.
         # Returns raw voltages
+        
+        if not self.inst_check():
+            return
         
         if self._is_recording:
             return
@@ -140,12 +153,40 @@ class Oscilloscope():
         if add_to_buffer:
             self.buffer.append( (time.time(), 
                                  recording_params, 
-                                 volts1, volts2) )
+                                 volts1, volts2,
+                                 name) )
         self._is_recording = False
-        self.inst.write('TRMD AUTO')
+#        self.inst.write('TRMD AUTO')
         return volts1, volts2
-        
     
+    
+    def record_duration(self, t):
+        '''
+        Record continuously for a given duration t
+        '''
+        if not self.inst_check():
+            return
+        st = time.time()
+        while time.time() - st < t:
+            if self.master.ABORT:
+                self.master.ABORT = False
+                return
+            self.record_frame()
+        return
+    
+    
+    def record_n(self, n):
+        '''
+        Record n frames sequentially
+        '''
+        if not self.inst_check():
+            return
+        for _ in range(n):
+            if self.master.ABORT:
+                run(self.master.make_ready)
+                return
+            self.record_frame()
+        
     
     def autocenter_frames(self):
         # Automatically adjust vertical divisions and vertical offset
