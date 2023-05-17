@@ -524,37 +524,9 @@ def LEVM_fit(freqs, Z, guess, circuit, free_params,
 
 
 if __name__ == '__main__':
-    
-    # file = r'C:/Users/BRoehrich/Desktop/EIS-EAB data/2022-09-14/vanco -340mV/0006s.txt'
-
-    # f, re, im = np.loadtxt(file, skiprows=1, unpack=True)
-    # Z = re + 1j*im
-    
-    # d_test = {'Rs': 8.7437e+002,
-    #           'Rct': 1.94050e+004,
-    #           'Cad': 9.99434e-007,
-    #           'phi':8.40000e-001,
-    #           'Cdl':3.69744e-007}
-    
-    # free_params = {'Rs': 0,
-    #           'Rct': 1,
-    #           'Cad': 1,
-    #           'phi':0,
-    #           'Cdl':1}
-    
-    # fits = LEVM_fit(f, Z, d_test, 'Randles_adsorption', free_params)
-    # print(fits)
-    # a = os.path.realpath(__file__)
-    
-    # folder = r'C:\Users\BRoehrich\Desktop\EIS-EAB data\2022-09-14\vanco -340mV'
-    folder = r'C:\Users\BRoehrich\Desktop\EIS-EAB data\2022-11-16\first 30 min -340mV'
+    import matplotlib.pyplot as plt
     params = []
     kets = []
-    # d = {'Rs': 8.7437e+002,
-    #         'Rct': 1.94050e+004,
-    #         'Cad': 9.99434e-007,
-    #         'phi':8.40000e-001,
-    #         'Cdl':3.69744e-007}
     
     d = {'Rs': 543,
             'Rct': 3.44050e+004,
@@ -569,30 +541,52 @@ if __name__ == '__main__':
             'Cdl':1}
     
     
+
+    folder = r'C:\Users\BRoehrich\Desktop\EIS fitting\test'
+    true_Rcts = []
+    R = 30000
+    for _ in range(400):
+        R -= 0.005*R
+        true_Rcts.append(R)
+        
+    fits = r'C:/Users/BRoehrich/Desktop/EIS fitting/test/test.par'
+    _, _, Rs, meisp_Rcts, Cads, phis, Cdls = np.loadtxt(fits, unpack=True)
+         
     i = 0
     for file in os.listdir(folder):
-        if file.endswith('s.txt'):
-            while i < 450:
-                if file.endswith('currents.txt'):
-                    continue
-                if file.endswith('s.txt'):
-                    f, re, im = np.loadtxt(os.path.join(folder,file), skiprows=1, unpack=True)
-                    Z = re + 1j*im
-                    
-                    if i == 0:
-                        d = d
-                    else:
-                        d = params[i-1]
-                    # d['Rs'] = re[-1]
-                    
-                    fits = LEVM_fit(f, Z, d, 'Randles_adsorption', free_params)
-                    print(fits)
-                    
-                    params.append(fits)
-                    ket = 1/(2*fits['Rct']*fits['Cad'])
-                    kets.append(ket)
-                    
-                    i += 1
+        if not file.endswith('.txt'):
+            continue
+        if len(file) != 7:
+            continue
+        print(file)
+        
+        f, re, im = np.loadtxt(os.path.join(folder,file), skiprows=1, unpack=True)
+        Z = re + 1j*im
+        
+        if i == 0:
+            d = d
+        else:
+            d = params[i-1]
+        # d['Rs'] = re[-1]
+        
+        fits = LEVM_fit(f, Z, d, 'Randles_adsorption', free_params)
+        print(i, fits)
+        
+        params.append(fits)
+        ket = 1/(2*fits['Rct']*fits['Cad'])
+        kets.append(ket)
+        
+        i += 1
+    
+    fig, ax = plt.subplots(figsize=(5,5), dpi=150)
+    ax.plot([p['Rct'] for p in params], label='LEVM')
+    ax.plot(meisp_Rcts, label='MEISP')
+    ax.plot(true_Rcts, label='Actual')
+    ax.set_xlabel('File #')
+    ax.set_ylabel(r'$R_{ct}$/ $\Omega$')
+    ax.legend()
+    fig.tight_layout()
+    
                                     
                             
     
