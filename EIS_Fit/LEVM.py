@@ -183,6 +183,11 @@ def params_to_LEVM_format(params):
             
             p[i] = guess
             binary_line[i-1] = free
+    
+    # Force Xi parameter = 1. Used in MEISP, for some reason this makes the 
+    # fits less susceptiple to noise
+    p[32] = 1
+    binary_line[31] = 0
             
     binary_line = ''.join(str(j) for j in binary_line)
     function = params['func']
@@ -525,6 +530,8 @@ def LEVM_fit(freqs, Z, guess, circuit, free_params,
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
+    import re
+    import time
     params = []
     kets = []
     
@@ -542,26 +549,31 @@ if __name__ == '__main__':
     
     
 
-    folder = r'C:\Users\BRoehrich\Desktop\EIS fitting\test'
-    true_Rcts = []
-    R = 30000
-    for _ in range(400):
-        R -= 0.005*R
-        true_Rcts.append(R)
+    # folder = r'C:\Users\BRoehrich\Desktop\EIS fitting\test'
+    # true_Rcts = []
+    # R = 30000
+    # for _ in range(400):
+    #     R -= 0.005*R
+    #     true_Rcts.append(R)
         
-    fits = r'C:/Users/BRoehrich/Desktop/EIS fitting/test/test.par'
+    # fits = r'C:/Users/BRoehrich/Desktop/EIS fitting/test/test.par'
+    # _, _, Rs, meisp_Rcts, Cads, phis, Cdls = np.loadtxt(fits, unpack=True)
+    
+    folder = r'C:\Users\BRoehrich\Desktop\EIS fitting\real'
+    fits = r'C:\Users\BRoehrich\Desktop\EIS fitting\real\real.par'
     _, _, Rs, meisp_Rcts, Cads, phis, Cdls = np.loadtxt(fits, unpack=True)
          
+    pattern = r"^\d{4}s\.txt$"
     i = 0
+    fit_times = []
     for file in os.listdir(folder):
-        if not file.endswith('.txt'):
+        if i > 100:
+            break
+        if not re.match(pattern, file):
             continue
-        if len(file) != 7:
-            continue
-        print(file)
         
-        f, re, im = np.loadtxt(os.path.join(folder,file), skiprows=1, unpack=True)
-        Z = re + 1j*im
+        f, real, im = np.loadtxt(os.path.join(folder,file), skiprows=1, unpack=True)
+        Z = real + 1j*im
         
         if i == 0:
             d = d
@@ -569,7 +581,9 @@ if __name__ == '__main__':
             d = params[i-1]
         # d['Rs'] = re[-1]
         
+        st = time.time()
         fits = LEVM_fit(f, Z, d, 'Randles_adsorption', free_params)
+        fit_times.append(time.time() - st)
         print(i, fits)
         
         params.append(fits)
@@ -581,11 +595,13 @@ if __name__ == '__main__':
     fig, ax = plt.subplots(figsize=(5,5), dpi=150)
     ax.plot([p['Rct'] for p in params], label='LEVM')
     ax.plot(meisp_Rcts, label='MEISP')
-    ax.plot(true_Rcts, label='Actual')
+    # ax.plot(true_Rcts, label='Actual')
     ax.set_xlabel('File #')
     ax.set_ylabel(r'$R_{ct}$/ $\Omega$')
     ax.legend()
     fig.tight_layout()
+    
+    print(f'average fit time: {np.mean(fit_times):0.4f}')
     
                                     
                             
