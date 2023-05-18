@@ -90,8 +90,8 @@ class ImpedanceSpectrum():
         d.to_csv(save_path, columns = ['f', 're', 'im'],
                  header = ['<Frequency>', '<Re(Z)>', '<Im(Z)>'], 
                  sep = '\t', index = False, encoding='ascii')
-        if 'autosave' not in save_path:
-            print(f'Saved as {save_path}')
+        # if 'autosave' not in save_path:
+        #     print(f'Saved as {save_path}')
         
     
     def average(self, spectra:list):

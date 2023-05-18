@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter.ttk import *
 import tkinter as tk
 import numpy as np
+import time
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -12,6 +13,7 @@ from .funcs import nearest
 
 
 plot_options = ['|Z|', 'Phase', 'Parameter', 'k']
+xmaxes = [30, 60, 120, 300, 600, 1200] + [1800*i for i in range(1,200)]
 
 # TODO: set initial xlim as 0, 15 min
 # every 15 minutes, update xlim and re-acquire background
@@ -31,6 +33,7 @@ class MonitorWindow:
         self.root   = root
         self._closed = False
         
+        self.expt = self.master.experiment
         self.last_spectrum = None
         self.saved_freqs   = []
         self.xdata = []
@@ -83,59 +86,47 @@ class MonitorWindow:
     def update(self):
         if self._closed:
             return
+        
+        if self.expt != self.master.experiment:
+            # In case user starts another time-series experiment
+            # before closing this window, don't plot to this one
+            print('expt doesnt match')
+            return
+        
         self.update_option_menu()
-        if len(self.master.experiment.spectra) == 0:
+        if len(self.expt.spectra) == 0:
             self.root.after(100, self.update)
             return
         
-        if self.master.experiment.spectra[-1] != self.last_spectrum:
+        if self.expt.spectra[-1] != self.last_spectrum:
+            st = time.time()
             self.update_plot()
+            t = time.time() - st
+            print(f'plot time: {t:0.3f} s')
         
         self.root.after(100, self.update)
      
         
     def update_plot(self):
-        spec      = self.master.experiment.spectra[-1]
+        spec      = self.expt.spectra[-1]
         selection = self.display_selection.get()
         option    = self.display_option.get()
         self.process_spectrum(spec, selection, option)
         self.redraw()
         self.last_spectrum = spec
-    
-    
-    def reset_axlim(self):
-        if (len(self.xdata) == 0 or 
-            len(self.ydata) == 0):
-            return
-        self.ax.set_xlim(min(self.xdata)-0.5,
-                         max(self.xdata)+2)
-        
-        if min(self.ydata) < 0:
-            miny = 1.05*min(self.ydata)
-        else:
-            miny = 0.95*min(self.ydata)
-            
-        if max(self.ydata) < 0:
-            maxy = 0.95*max(self.ydata)
-        else:
-            maxy = 1.05*max(self.ydata)
-        
-        self.ax.set_ylim(miny, maxy)
-        return
-    
+       
     
     def redraw(self):
         '''
         Redraw figure with blitting
         '''
-        # self.canvas.restore_region(self.bg)
+        self.update_axlim()
+        
+        self.canvas.restore_region(self.bg)
         self.ln.set_data(self.xdata, self.ydata)
         self.ax.draw_artist(self.ln)
-        # # self.ax.relim()
-        # # self.ax.reset_ticks()
-        # # self.canvas.blit(self.fig.bbox)
-        self.canvas.draw_idle()
-        # self.canvas.flush_events()
+        self.canvas.blit(self.fig.bbox)
+        self.canvas.flush_events()
         
     
     
@@ -153,7 +144,7 @@ class MonitorWindow:
         self.ydata = []
         self.ax.clear()
         
-        for spectrum in self.master.experiment.spectra:
+        for spectrum in self.expt.spectra:
             
             self.process_spectrum(spectrum, selection, option)
             self.last_spectrum = spectrum
@@ -161,16 +152,58 @@ class MonitorWindow:
         self.ax.set_xlabel('Time/ s')
         self.ax.set_ylabel(f'{selection} @ {option}')
         
-        self.fig.canvas.draw()
-        self.ln, = self.ax.plot(self.xdata, self.ydata, animated=False)
+        if len(self.xdata) == 0:
+            self._draw_blit()
+            return
+        self.update_axlim()
+    
+    
+    def update_axlim(self):
+        updated = False
+        
+        xlim = self.ax.get_xlim()
+        ylim = self.ax.get_ylim()
+        
+        # Check if we need to extend x axis
+        xmax = xlim[1]
+        xmax_idx, _ = nearest(xmaxes, xmax)
+        
+        if self.xdata[-1] > 0.9*xmax:
+            while self.xdata[-1] > 0.9*xmax:
+                xmax_idx += 1
+                xmax = xmaxes[xmax_idx]
+            self.ax.set_xlim(0,xmaxes[xmax_idx])
+            updated = True
+        
+        # Check if we need to zoom out of y axis
+        if ( (min(self.ydata) <= ylim[0]) or 
+             (max(self.ydata) >= ylim[1]) ):
+            yrange = max(self.ydata) - min(self.ydata)
+            if yrange == 0:
+                yrange = self.ydata[0]
+            
+            ymax = max(self.ydata) + 0.3*yrange
+            ymin = min(self.ydata) - 0.3*yrange
+            
+            self.ax.set_ylim(ymin, ymax)
+            updated = True
+        
+        if updated:
+            # Save new background
+            self._draw_blit()
+    
+    
+    def _draw_blit(self):
         self.fig.tight_layout()
-        
-        # self.bg = self.canvas.copy_from_bbox(self.fig.bbox)
+        self.fig.canvas.draw()
+        self.ln, = self.ax.plot(self.xdata, self.ydata, 'ko-', 
+                                animated=True)
+        self.bg = self.canvas.copy_from_bbox(self.fig.bbox)
         self.ax.draw_artist(self.ln)
-        # self.canvas.blit(self.fig.bbox)
-        self.canvas.draw()
+        self.canvas.blit(self.fig.bbox)
+        self.canvas.flush_events()
         
-        
+    
     def process_spectrum(self, spectrum, selection, option):
         '''
         Spectrum: ImpedanceSpectrum
@@ -182,13 +215,13 @@ class MonitorWindow:
         
         # append time to xdata
         t = spectrum.timestamp
-        self.xdata.append(t - self.master.experiment.spectra[0].timestamp)
+        self.xdata.append(t - self.expt.spectra[0].timestamp)
         
-        if selection in ('|Z|', 'phase'):
+        if selection in ('|Z|', 'Phase'):
             idx, _ = nearest(spectrum.freqs, float(option))
             if selection == '|Z|':
                 self.ydata.append(np.absolute(spectrum.Z[idx]))
-            elif selection == 'phase':
+            elif selection == 'Phase':
                 self.ydata.append(spectrum.phase[idx])
         else:
             print(f'{selection} not yet implemented')
