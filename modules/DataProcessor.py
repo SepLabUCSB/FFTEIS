@@ -23,7 +23,6 @@ class DataProcessor():
         self.master.register(self)
         self.buffer = ADCDataBuffer
                 
-        self.data  = []
         self.wf    = None
         
 
@@ -104,9 +103,6 @@ class DataProcessor():
         idxs = [i for i, freq in enumerate(freqs) 
                 if freq in self.applied_freqs]
                 
-        
-        self.data.append( (freqs, ft_v, ft_i) )
-        
         freqs = freqs[idxs]
         ft_v  = ft_v[idxs]
         ft_i  = ft_i[idxs]
