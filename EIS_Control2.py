@@ -28,6 +28,7 @@ from modules.DataProcessor import DataProcessor
 from modules.DataStorage import Experiment, ImpedanceSpectrum
 from modules.Oscilloscope import Oscilloscope
 from modules.Waveform import Waveform
+from modules.Fitter import Fitter
 from modules.TitrationMultiplexer import TitrationMultiplexer
 from modules.MonitorWindow import MonitorWindow
 from modules.funcs import nearest, run
@@ -295,6 +296,18 @@ class GUI():
         Button(topright, text='Create New Waveform', command=
                self.create_new_waveform).grid(column=0, row=4,
                                               columnspan=2, sticky=(W,E))
+                                              
+                                              
+        # Fitting options
+        circuits = ['RC', 'Sensor']
+        self.fit_bool = BooleanVar(topright, value=TRUE)
+        Checkbutton(topright, text='Fit', variable=self.fit_bool).grid(
+            column=0, row=5, sticky=(E))
+        self.fit_circuit = StringVar()
+        fitmenu = OptionMenu(topright, self.fit_circuit, circuits[0], 
+                             *circuits, command=self.init_fitter)
+        fitmenu.grid(column=1, row=5, sticky=(E,W))
+        
                               
         
         ###############################
@@ -705,6 +718,11 @@ class GUI():
         popup.quit()
         
         return
+    
+    
+    def init_fitter(self, circuit_selection):
+        fitter = Fitter(self.master)
+        fitter.parameter_window(circuit_selection)
         
                 
 
@@ -731,19 +749,19 @@ if __name__ == '__main__':
     run(dataProcessor.run)
     
     root = Tk()
-    try:
-        gui = GUI(root, master)
+    # try:
+    gui = GUI(root, master)
+    
+    root.after(1000, gui.update_plot)
+    root.mainloop()
+    root.quit()
+    gui.willStop = True
         
-        root.after(1000, gui.update_plot)
-        root.mainloop()
-        root.quit()
-        gui.willStop = True
-        
-    except Exception as e:
-        sys.stdout = default_stdout
-        sys.stdin  = default_stdin
-        sys.stderr = default_stderr
-        print(traceback.format_exc())
+    # except Exception as e:
+    #     sys.stdout = default_stdout
+    #     sys.stdin  = default_stdin
+    #     sys.stderr = default_stderr
+    #     print(traceback.format_exc())
     
     gui.willStop = True
     sys.stdout = default_stdout
