@@ -75,7 +75,10 @@ class Oscilloscope():
     
     def get_i_range(self):
         # Read current range from GUI
-        i_range = self.master.GUI.current_range.get()
+        try:
+            i_range = self.master.GUI.current_range.get()
+        except:
+            i_range = '1 A'
         val, unit = i_range.split(' ')
         
         factor = {'nA': 1e-9,
@@ -224,16 +227,16 @@ class Oscilloscope():
             voffset2 = self.recording_params['voffset2']
             
             # Determine if we should zoom in more
-            if not (max(v1) > (-voffset1 + 1.5*vdiv1) or
-                    min(v1) < (-voffset1 - 1.5*vdiv1) or
+            if not (max(v1) > (-voffset1 + 2*vdiv1) or
+                    min(v1) < (-voffset1 - 2*vdiv1) or
                     V1_DONE):
                 v1_idx -= 1
             else:
                 V1_DONE = True
             
                 
-            if not (max(v2) > (-voffset2 + 1.5*vdiv2) or
-                    min(v2) < (-voffset2 - 1.5*vdiv2) or
+            if not (max(v2) > (-voffset2 + 2*vdiv2) or
+                    min(v2) < (-voffset2 - 2*vdiv2) or
                     V2_DONE):
                 v2_idx -= 1
             else:
@@ -274,6 +277,7 @@ class Oscilloscope():
 
 
 if __name__ == '__main__':
+    import matplotlib.pyplot as plt
     class thisMaster:
         def __init__(self):
             self.STOP = False
@@ -282,11 +286,22 @@ if __name__ == '__main__':
     buffer = ADCDataBuffer()
     master = thisMaster()
     scope  = Oscilloscope(master, buffer)
-    dataProcessor = DataProcessor(master, buffer)
+    # dataProcessor = DataProcessor(master, buffer)
     scope.initialize()
     scope.autocenter_frames()
-    run(dataProcessor.run)
-    scope.record_frame()
+    # run(dataProcessor.run)
+    v1, v2 = scope.record_frame()
+    
+    t = np.linspace(0,1.4, len(v1))
+    cutoff_id = min([i for i, ti in enumerate(t) if ti > 1])
+    
+    #%%
+    v1 = v1[:cutoff_id]
+    v2 = v2[:cutoff_id]
+    
+    fig, ax = plt.subplots()
+    ax.plot(np.abs(np.fft.rfft(v2)))
+    ax.set_xscale('log')
     
     
         
