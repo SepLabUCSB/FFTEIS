@@ -10,14 +10,9 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from .funcs import nearest
 
 
-
-
 plot_options = ['|Z|', 'Phase', 'Parameter', 'k']
 xmaxes = [30, 60, 120, 300, 600, 1200] + [1800*i for i in range(1,200)]
 
-# TODO: set initial xlim as 0, 15 min
-# every 15 minutes, update xlim and re-acquire background
-# Set generous ylim, and only redo background if y goes very close
 
 class MonitorWindow:
     '''
@@ -62,6 +57,7 @@ class MonitorWindow:
                                     '', *['',], 
                                     command=self._display_option_changed)
         self.display_option_menu.grid(row=0, column=2, sticky=(W,E))
+        self.update_option_menu()
         
         figframe = Frame(self.window)
         figframe.grid(row=1, column=0, sticky=(W,E))
@@ -84,17 +80,20 @@ class MonitorWindow:
     
     
     def update(self):
+        '''
+        Called periodically by Tk root. Check if new data should be plotted
+        '''
         if self._closed:
             return
         
         if self.expt != self.master.experiment:
             # In case user starts another time-series experiment
             # before closing this window, don't plot to this one
-            print('expt doesnt match')
             return
         
         self.update_option_menu()
         if len(self.expt.spectra) == 0:
+            # Recording hasn't started
             self.root.after(100, self.update)
             return
         
@@ -102,25 +101,57 @@ class MonitorWindow:
             st = time.time()
             self.update_plot()
             t = time.time() - st
-            print(f'plot time: {t:0.3f} s')
+            # print(f'plot time: {t:0.3f} s')
         
+        # Reschedule
         self.root.after(100, self.update)
      
         
     def update_plot(self):
+        '''
+        Append newest data point to plot. 
+        '''
         spec      = self.expt.spectra[-1]
         selection = self.display_selection.get()
         option    = self.display_option.get()
         self.process_spectrum(spec, selection, option)
         self.redraw()
         self.last_spectrum = spec
-       
+    
+    
+    def process_spectrum(self, spectrum, selection, option):
+        '''
+        Extract the requested piece of information out of the spectrum
+        
+        Spectrum: ImpedanceSpectrum
+        selection: one of '|Z|', 'Phase', 'Parameter', 'k'.
+        option: a number (meaning a frequency) or string (corresponding
+                to an EEC parameter)
+        I.e. selection = '|Z|', option = 100.0: plot |Z|(100Hz) vs t
+        '''
+        
+        # append time to xdata
+        t = spectrum.timestamp
+        self.xdata.append(t - self.expt.spectra[0].timestamp)
+        
+        if selection in ('|Z|', 'Phase'):
+            idx, _ = nearest(spectrum.freqs, float(option))
+            if selection == '|Z|':
+                self.ydata.append(np.absolute(spectrum.Z[idx]))
+            elif selection == 'Phase':
+                self.ydata.append(spectrum.phase[idx])
+        else:
+            # TODO: implement once fitting is working
+            print(f'{selection} not yet implemented')
+            self.ydata.append(1)
+        return
+    
     
     def redraw(self):
         '''
         Redraw figure with blitting
         '''
-        self.update_axlim()
+        self.update_axlim() # Check if we need to adjust the axis limits
         
         self.canvas.restore_region(self.bg)
         self.ln.set_data(self.xdata, self.ydata)
@@ -128,37 +159,12 @@ class MonitorWindow:
         self.canvas.blit(self.fig.bbox)
         self.canvas.flush_events()
         
-    
-    
-    def redraw_plot(self):
-        '''
-        Called in case of option change (i.e., plot something different)
         
-        Redraw everything
-        '''
-        
-        selection = self.display_selection.get()
-        option    = self.display_option.get()
-        
-        self.xdata = []
-        self.ydata = []
-        self.ax.clear()
-        
-        for spectrum in self.expt.spectra:
-            
-            self.process_spectrum(spectrum, selection, option)
-            self.last_spectrum = spectrum
-        
-        self.ax.set_xlabel('Time/ s')
-        self.ax.set_ylabel(f'{selection} @ {option}')
-        
-        if len(self.xdata) == 0:
-            self._draw_blit()
-            return
-        self.update_axlim()
-    
-    
     def update_axlim(self):
+        '''
+        Check if we need to expand the axis limits. If so, redraw the figure
+        and save the new background for blitting
+        '''
         updated = False
         
         xlim = self.ax.get_xlim()
@@ -188,12 +194,15 @@ class MonitorWindow:
             self.ax.set_ylim(ymin, ymax)
             updated = True
         
-        if updated:
-            # Save new background
+        # Save new background
+        if updated:   
             self._draw_blit()
     
-    
+        
     def _draw_blit(self):
+        '''
+        Draw figure and save its background
+        '''
         self.fig.tight_layout()
         self.fig.canvas.draw()
         self.ln, = self.ax.plot(self.xdata, self.ydata, 'ko-', 
@@ -202,34 +211,40 @@ class MonitorWindow:
         self.ax.draw_artist(self.ln)
         self.canvas.blit(self.fig.bbox)
         self.canvas.flush_events()
-        
     
-    def process_spectrum(self, spectrum, selection, option):
+    
+    def redraw_plot(self):
         '''
-        Spectrum: ImpedanceSpectrum
-        selection: one of '|Z|', 'Phase', 'Parameter', 'k'.
-        option: a number (meaning a frequency) or string (corresponding
-                to an EEC parameter)
-        I.e. selection = '|Z|', option = 100.0: plot |Z|(100Hz) vs t
+        Called in case of option change (i.e., plot something different)
+        
+        Also used to initialize plot. Redraw everything.
         '''
         
-        # append time to xdata
-        t = spectrum.timestamp
-        self.xdata.append(t - self.expt.spectra[0].timestamp)
+        selection = self.display_selection.get()
+        option    = self.display_option.get()
         
-        if selection in ('|Z|', 'Phase'):
-            idx, _ = nearest(spectrum.freqs, float(option))
-            if selection == '|Z|':
-                self.ydata.append(np.absolute(spectrum.Z[idx]))
-            elif selection == 'Phase':
-                self.ydata.append(spectrum.phase[idx])
-        else:
-            print(f'{selection} not yet implemented')
-            self.ydata.append(1)
-        return
-     
+        self.xdata = []
+        self.ydata = []
+        self.ax.clear()
+        
+        for spectrum in self.expt.spectra:
+            
+            self.process_spectrum(spectrum, selection, option)
+            self.last_spectrum = spectrum
+        
+        self.ax.set_xlabel('Time/ s')
+        self.ax.set_ylabel(f'{selection} @ {option}')
+        
+        if len(self.xdata) == 0:
+            self._draw_blit()
+            return
+        self.update_axlim()
+    
 
     def update_option_menu(self):
+        '''
+        Update the frequency or parameter selection dropdown menu
+        '''
         freqs = list(self.master.waveform.freqs)
         if freqs is None:
             return
@@ -239,7 +254,6 @@ class MonitorWindow:
         self.display_option_menu.set_menu(freqs[0], *freqs)
         return
             
-        
         
     def _display_menu_changed(self, option):
         self.redraw_plot()
