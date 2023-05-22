@@ -183,12 +183,7 @@ class Fitter():
         
         # Run fitting subroutine
         fits = LEVM_fit(freqs, Z, guess, circuit, free)
-        
-        # Clean up empty files in main working directory (not sure why LEVM generates these)
-        for file in ('AUXPNTL', 'INFL', 'PNTOUTL'):
-            if os.path.exists(file):
-                os.remove(file)
-                
+                        
         return fits
 
 
