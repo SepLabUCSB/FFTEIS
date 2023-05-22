@@ -71,9 +71,9 @@ def predict_circuit(circuit, frequencies, params):
         R1 = params['Rs']
         R2 = params['Rct']
         Q1 = params['Cdl']
-        n1 = params['ndl']
-        Q2 = params['Cad']
-        n2 = params['nad']
+        n1 = params['n_dl']
+        Q2 = params['Cads']
+        n2 = params['n_ads']
         Ca = CPE(frequencies, {'Q':Q2, 'n':n2})
         Cdl = CPE(frequencies, {'Q':Q1, 'n':n1})
         Z = R1 + 1/(1/Cdl + 1/(R2+Ca))
@@ -188,7 +188,7 @@ class Fitter():
         free  = {elem: boolean for elem, (value, boolean) in initial_guess.items()}
         
         # Run fitting subroutine
-        fits = LEVM_fit(freqs, Z, guess, circuit, free)
+        fits = LEVM_fit(freqs, Z, guess, circuit, free, timeout=0.4)
         return fits
 
 

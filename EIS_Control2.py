@@ -50,7 +50,7 @@ update_file = os.path.join(this_dir, 'update.txt')
 TODO:
 - save metadata
 
-- implement fitting
+- *** handle bad fits ***
 
 BUGS:
     - Autosave creates an empty folder ~3s before real folder
@@ -345,7 +345,8 @@ class GUI():
                 self.ax2.plot(freqs, phase, ls, color='orange')
                 self.ax.plot(freqs, Z, ls, color=colors[0])
                 
-                if self.fit_bool.get():
+                if (self.fit_bool.get() and self.last_spectrum.fit):
+                    # print(self.last_spectrum.fit)
                     fit_Z = predict_circuit(self.fit_circuit.get(),
                                             freqs, self.last_spectrum.fit)
                     self.ax.plot(freqs, abs(fit_Z), '-', color=colors[0],

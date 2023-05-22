@@ -19,14 +19,31 @@ def assign_params(circuit, guess, free):
         # function ('A'-'F' most appropriate for solution phase 
         # echem) and map circuit elements to the correct parameter (0-40) 
     
-    if circuit == 'Randles_adsorption':
+    if circuit == 'Sensor':
+        # # Force Cdl to be true capacitor
+        # d = {
+        #       'Rs':   (1, guess['Rs'], free['Rs']),
+        #       'Rct':  (4, guess['Rct'], free['Rct']),
+        #       'Cdl':  (3, guess['Cdl'], free['Cdl']),
+        #       'Cad':  (7, guess['Cads'], free['Cads']),
+        #       'n_ads':(9, guess['n_ads'], free['n_ads']),
+        #       '_Cad': (10, 2, 0),
+        #       'func': 'C'
+        #       }
+        
+        # Cdl as CPE
         d = {
-             'Rs':   (1, guess['Rs'], free['Rs']),
-             'Rct':  (4, guess['Rct'], free['Rct']),
-             'Cdl':  (3, guess['Cdl'], free['Cdl']),
-             'Cad':  (7, guess['Cad'], free['Cad']),
-             'phi':  (9, guess['phi'], free['phi']),
-             '_Cad': (10, 2, 0),
+             'Rs':   (1, guess['Rs'], free['Rs']),          # R1
+             'Rct':  (25, guess['Rct'], free['Rct']),       # R4
+             
+             'Cdl':  (12, guess['Cdl'], free['Cdl']),       # DE2 T
+             'n_dl': (14, guess['n_dl'], free['n_dl']),     # DE2 P
+             '_Cdl': (15, 2, 0),                            # DE2 N
+             
+             'Cads':  (17, guess['Cads'], free['Cads']),     # DE3 T
+             'n_ads':(19, guess['n_ads'], free['n_ads']),   # DE3 P
+             '_Cads': (20, 2, 0),                            # DE3 N
+             
              'func': 'C'
              }
         
@@ -493,33 +510,34 @@ if __name__ == '__main__':
     params = []
     kets = []
     
-    # d = {'Rs': 543,
-    #         'Rct': 3.44050e+004,
-    #         'Cad': 4.79434e-007,
-    #         'phi':8.40000e-001,
-    #         'Cdl':2.25e-007}   
+    d = {'Rs': 543,
+            'Rct': 3.44050e+004,
+            'Cads': 4.79434e-007,
+            'n_dl':1,
+            'n_ads':8.40000e-001,
+            'Cdl':2.25e-007}   
     
-    # free_params = {'Rs': 1,
-    #         'Rct': 1,
-    #         'Cad': 1,
-    #         'phi':0,
-    #         'Cdl':1}
+    free_params = {'Rs': 1,
+            'Rct': 1,
+            'Cads': 1,
+            'n_ads':0,
+            'Cdl':1,
+            'n_dl':0}
     
     
-    d = {'R1': 100,
-         'R2': 1000,
-         'C1': 1e-6,}
+    # d = {'R1': 100,
+    #      'R2': 1000,
+    #      'C1': 1e-6,}
     
-    free_params = {'R1': 1,
-         'R2': 1,
-         'C1': 1,}
+    # free_params = {'R1': 1,
+    #      'R2': 1,
+    #      'C1': 1,}
     
     file = r'C:/Users/broehrich/Desktop/EIS Output/2023-05-22/autosave/12-31-04/000001.txt'
     f, real, im = np.loadtxt(file, skiprows=1, unpack=True)
     Z = real + 1j*im
     
-    fits = LEVM_fit(f, Z, d, 'RRC', free_params)
-    print(fits)
+    fits = LEVM_fit(f, Z, d, 'Sensor', free_params)
 
     # folder = r'C:\Users\BRoehrich\Desktop\EIS fitting\test'
     # true_Rcts = []

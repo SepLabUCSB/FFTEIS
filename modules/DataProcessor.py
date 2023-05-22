@@ -63,7 +63,9 @@ class DataProcessor():
             if len(self.master.experiment.spectra) > 0:
                 initial_guess = self.master.experiment.spectra[-1].fit.copy()
             fit = self.master.GUI.fitter.fit(spectrum, initial_guess)
-            spectrum.fit = fit
+            
+            if type(fit) == dict:            
+                spectrum.fit = fit
             
             
         self.master.experiment.append_spectrum(spectrum)
