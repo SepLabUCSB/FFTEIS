@@ -149,7 +149,7 @@ class Fitter():
         self.bools = {}
         for (elem, value, boolean) in zip(elems, values, bools):
             try:
-                self.guesses[elem] = (value.get(), 
+                self.guesses[elem] = (float(value.get()), 
                                       boolean.get()) 
                 self.bools[elem]   = boolean.get()
             except:
@@ -178,7 +178,6 @@ class Fitter():
             if not type(val) == tuple:
                 initial_guess[elem] = (val, self.bools[elem])
         
-        # print(initial_guess)
         circuit = self.circuit
         
         # Set values for fitting
@@ -190,7 +189,6 @@ class Fitter():
         
         # Run fitting subroutine
         fits = LEVM_fit(freqs, Z, guess, circuit, free)
-        # print(f'fits: {fits}')
         return fits
 
 

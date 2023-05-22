@@ -114,6 +114,7 @@ inputs = {
 def float_to_string(n, decimals = 8):
     # Convert scientific notation to Fortran D notation
     if type(n) == str:
+        print(f'LEVM.py received string instead of float: {n}')
         return n
     
     if decimals == 8:
@@ -336,15 +337,13 @@ def write_input_file(file, freqs, Z, params, comment=' '):
     
     
     p, binary_line, function = params_to_LEVM_format(params)
-        
+            
     inputs['FUN'] = function    
     inputs['M'] = str(len(freqs)).rjust(5, ' ')
     
     for i in p:
         p[i] = float_to_string(p[i], 8)
-    
-    # print(f'Writing inputs to {file}')
-    
+        
     write_comment_line(file, comment)
     write_input_params(file)
     write_initial_params(file, p)
