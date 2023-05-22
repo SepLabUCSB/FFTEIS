@@ -454,20 +454,21 @@ def LEVM_fit(freqs, Z, guess, circuit, free_params,
 
     '''
     # Determine location of LEVM.py
+    original_path = os.getcwd()
     path = os.path.realpath(__file__)[:-7]
-    # print(f'LEVM.py path: {path}')
     
-    LEVM_path = path + 'LEVM.exe'
-    
-    # print(f'LEVM.exe path: {LEVM_path}')
+    os.chdir(path)
+    LEVM_path = 'LEVM.exe'
     
     params = assign_params(circuit, guess, free_params)
     
-    write_input_file(path + 'INFL', freqs, Z, params, comment)
+    write_input_file('INFL', freqs, Z, params, comment)
     timedout = run_LEVM(LEVM_path, timeout = timeout)
     if timedout == 1:
         return 0
-    fits = extract_params(path + 'OUTIN', params)
+    fits = extract_params('OUTIN', params)
+    
+    os.chdir(original_path)
     
     return fits
 
