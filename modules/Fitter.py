@@ -7,16 +7,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from LEVM.LEVM import LEVM_fit
+from .LEVM.LEVM import LEVM_fit
 
 
 
 # Default parameter initial guesses/ free or not (bool)
 circuit_params = {
-    'RC': {
-        'R1': (5100, 1),
+    'RRC': {
+        'R1': (100, 1),
+        'R2': (1000, 1),
         'C1': (1e-6, 1),
-        '_img': 'etc/RC.png'     
+        '_img': 'etc/RRC.png'     
         },
     'Sensor': {
         'Rs': (500, 1),
@@ -64,12 +65,16 @@ class Fitter():
         
         imframe = Frame(window)
         imframe.grid(row=0, column=1)
-        fig = plt.Figure(figsize=(3,2), dpi=50)
+        fig = plt.Figure(figsize=(3,2), dpi=80)
         ax = fig.add_subplot(111)
         canvas = FigureCanvasTkAgg(fig, master=imframe)
         canvas.get_tk_widget().grid(row=0, column=0)
         img = np.asarray(Image.open(imgfile))
         ax.imshow(img)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.spines[['left', 'right', 'top', 'bottom']].set_visible(False)
+        
         
         row = 0
         elems  = []
@@ -132,6 +137,7 @@ class Fitter():
         
         # Run fitting subroutine
         fits = LEVM_fit(freqs, Z, guess, circuit, free)
+        print(fits)
         
         return
 

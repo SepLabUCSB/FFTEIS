@@ -21,6 +21,7 @@ class Experiment():
             
         self.path     = path    # Save path
         self.time_file= os.path.join(path, '!times.txt')
+        self.fit_file = os.path.join(path, '!fits.txt')
         self.spectra  = []
         self.i        = 0       # Counter for # of spectra
         
@@ -33,11 +34,25 @@ class Experiment():
         self.i = len(self.spectra)
         spectrum.save()
         self.write_time(spectrum)
+        self.write_fits(spectrum)
         
     
     def write_time(self, spectrum):
         with open(self.time_file, 'a') as f:
             f.write(f'{spectrum.timestamp}\n')
+            
+            
+    def write_fits(self, spectrum):
+        if spectrum.fits == None:
+            return
+        with open(self.fits_file, 'a') as f:
+            if self.i == 1:
+                header_line = ','.join(key for key in spectrum.fits.keys())
+                header_line = 'file,' + header_line
+                f.write(header_line + '\n')
+            line = ','.join(str(val) for val in spectrum.fits.values())
+            line = f'{spectrum.name},' + line
+            f.write(line + '\n')
         
         
     def set_waveform(self, Waveform):
@@ -55,6 +70,7 @@ class ImpedanceSpectrum():
         self.experiment= experiment # Associated Experiment object
         self.timestamp = timestamp
         self.name      = name
+        self.fit       = None
         
     def correct_Z(self, Z_factors, phase_factors):
         

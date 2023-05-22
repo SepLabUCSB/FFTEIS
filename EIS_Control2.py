@@ -299,7 +299,7 @@ class GUI():
                                               
                                               
         # Fitting options
-        circuits = ['RC', 'Sensor']
+        circuits = ['RRC', 'Sensor']
         self.fit_bool = BooleanVar(topright, value=TRUE)
         Checkbutton(topright, text='Fit', variable=self.fit_bool).grid(
             column=0, row=5, sticky=(E))
@@ -439,9 +439,14 @@ class GUI():
         if not R:
             return
         
+        # Never try to fit reference spectrum
+        if hasattr(self, 'fitter'):
+            del self.fitter
+        
         # Do it in another thread
         run( partial(self._record_reference, R) )
         return
+    
     
     def _record_reference(self, R):
         R = R.replace('k', '000')
@@ -489,6 +494,9 @@ class GUI():
         '''
         self.master.set_experiment(Experiment())
         self.master.experiment.set_waveform(self.master.waveform)
+        
+        self.check_fitter()               
+        
         run(self.master.Oscilloscope.record_frame)
         return
     
@@ -507,6 +515,7 @@ class GUI():
         
         self.master.set_experiment(Experiment(name=name))
         self.master.experiment.set_waveform(self.master.waveform)
+        self.check_fitter()        
         run(partial(self.master.Oscilloscope.record_duration, t) )
         mw = MonitorWindow(self.master, self.root)
         mw.update()
@@ -543,6 +552,8 @@ class GUI():
         
         self.master.set_experiment(Experiment())
         self.master.experiment.set_waveform(self.master.waveform)
+        
+        self.check_fitter()
         
         expt = Experiment(name = 'temp')
         expt.set_waveform(self.master.waveform)
@@ -592,6 +603,8 @@ class GUI():
         
         self.master.set_experiment(Experiment(name=name))
         self.master.experiment.set_waveform(self.master.waveform)
+        
+        self.check_fitter()
         
 
         def _multiplex():
@@ -721,8 +734,17 @@ class GUI():
     
     
     def init_fitter(self, circuit_selection):
+        if hasattr(self, 'fitter'):
+            del self.fitter
         fitter = Fitter(self.master)
         fitter.parameter_window(circuit_selection)
+        self.fitter = fitter
+        
+        
+    def check_fitter(self):
+        if self.fit_bool.get():
+            if not hasattr(self, 'fitter'):
+                self.init_fitter(self.fit_circuit.get())
         
                 
 

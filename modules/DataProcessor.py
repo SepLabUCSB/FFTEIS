@@ -56,6 +56,16 @@ class DataProcessor():
             )
         if self.master.GUI.ref_correction_bool.get():
             spectrum.correct_Z(self.Z_factors, self.phase_factors)
+            
+        if (self.master.GUI.fit_bool.get() and
+            hasattr(self.master.GUI, 'fitter')):
+            initial_guess = None
+            if len(self.master.experiment.spectra) > 0:
+                initial_guess = self.master.experiment.spectra[-1].fit
+            fit = self.master.GUI.fitter.fit(spectrum, initial_guess)
+            spectrum.fit = fit
+            
+            
         self.master.experiment.append_spectrum(spectrum)
 
                 
@@ -106,6 +116,7 @@ class DataProcessor():
         freqs = freqs[idxs]
         ft_v  = ft_v[idxs]
         ft_i  = ft_i[idxs]
+                
         self.make_spectrum(timestamp, freqs, ft_v/ft_i, name)
         
         
