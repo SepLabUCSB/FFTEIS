@@ -31,8 +31,7 @@ class MonitorWindow:
         
         self.expt = self.master.experiment
         self.last_spectrum = None
-        self.saved_freqs   = []
-        self.saved_params  = {}
+        self.last_selection= None
         self.xdata = []
         self.ydata = []
         
@@ -253,13 +252,16 @@ class MonitorWindow:
         '''
         Update the frequency or parameter selection dropdown menu
         '''
+        
+        # Don't update if the selection hasn't changed
+        if self.display_selection.get() == self.last_selection:
+            return
+        self.last_selection = self.display_selection.get()
+        
         if self.display_selection.get() in ('|Z|', 'Phase'):
             freqs = list(self.master.waveform.freqs)
             if freqs is None:
                 return
-            if freqs == self.saved_freqs:
-                return
-            self.saved_freqs = list(freqs)
             self.display_option_menu.set_menu(freqs[0], *freqs)
             return
         
@@ -267,14 +269,11 @@ class MonitorWindow:
             circuit = self.master.GUI.fit_circuit.get()
             params = list(circuit_params[circuit].keys())
             params.remove('_img')
-            if params == self.saved_params:
-                return
-            self.saved_params = params
             self.display_option_menu.set_menu(params[0], *params)
             return
         
         if self.display_selection.get() == 'k':
-            self.display_option_menu.set_menu('', *[''])
+            self.display_option_menu.set_menu('-', *['-',])
             return
             
         
@@ -284,6 +283,7 @@ class MonitorWindow:
     
     
     def _display_option_changed(self, value):
+        # self.update_option_menu()
         self.redraw_plot()
         
         

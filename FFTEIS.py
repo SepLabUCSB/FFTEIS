@@ -527,15 +527,16 @@ class GUI():
         '''
         if not self.check_dataprocessor():
             return
-        if not self.check_fitter():
-            return
-        
+
         t = ask_duration_popup()
         if t <= 0:
             return
         
         name = tk.simpledialog.askstring('Save As', 'Input save name: ')
         if not name:
+            return
+        
+        if not self.check_fitter():
             return
         
         self.master.set_experiment(Experiment(name=name))
