@@ -175,6 +175,7 @@ class Oscilloscope():
                 self.master.ABORT = False
                 return
             self.record_frame()
+        print('Recording finished!')
         return
     
     
