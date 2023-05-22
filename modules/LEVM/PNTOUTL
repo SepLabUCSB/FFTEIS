@@ -8,22 +8,22 @@
  DATA ENTERED IN ZR FORMAT TO BE USED IN ZR FIT;      CIRCUIT MODEL : C
 
             *********  FIT OF COMPLEX DATA  *********
-- # OF DATA POINTS = 29     WEIGHT: IRCH =  3     # OF FREE PARAMETERS = 4
-- PRINTS EVERY  0 ITERATIONS     MAX # ITERATIONS= 49     MAIN WT USES: DATA
+- # OF DATA POINTS = 16     WEIGHT: IRCH =  3     # OF FREE PARAMETERS = 3
+- PRINTS EVERY  0 ITERATIONS     MAX # ITERATIONS= 99     MAIN WT USES: DATA
 
       MODULUS WEIGHTING: RESULTS RAISED TO THE POWER 1.00000D+00
 
  INITIAL PARAMETER GUESSES AND FIXED (0) OR FREE (1 OR 2) STATUS
-     P( 1) =    8.062886D+02    1        P(17) =    0.000000D+00    0
+     P( 1) =    1.000000D+02    1        P(17) =    0.000000D+00    0
      P( 2) =    0.000000D+00    0        P(18) =    0.000000D+00    0
-     P( 3) =    2.323760D-07    1        P(19) =    0.000000D+00    0
-     P( 4) =    8.256428D+04    1        P(20) =    0.000000D+00    0
+     P( 3) =    1.000000D-06    1        P(19) =    0.000000D+00    0
+     P( 4) =    1.000000D+03    1        P(20) =    0.000000D+00    0
      P( 5) =    0.000000D+00    0        P(21) =    0.000000D+00    0
      P( 6) =    0.000000D+00    0        P(22) =    0.000000D+00    0
-     P( 7) =    2.941197D-07    1        P(23) =    0.000000D+00    0
+     P( 7) =    0.000000D+00    0        P(23) =    0.000000D+00    0
      P( 8) =    0.000000D+00    0        P(24) =    0.000000D+00    0
-     P( 9) =    8.400000D-01    0        P(25) =    0.000000D+00    0
-     P(10) =    2.000000D+00    0        P(26) =    0.000000D+00    0
+     P( 9) =    0.000000D+00    0        P(25) =    0.000000D+00    0
+     P(10) =    0.000000D+00    0        P(26) =    0.000000D+00    0
      P(11) =    0.000000D+00    0        P(27) =    0.000000D+00    0
      P(12) =    0.000000D+00    0        P(28) =    0.000000D+00    0
      P(13) =    0.000000D+00    0        P(29) =    0.000000D+00    0
@@ -39,17 +39,18 @@
 
 -NO TRANSFORMATION MADE: DATA IN ZR FORMAT
 
-     TERMINATION: FTOL IS TOO SMALL.NO FURTHER REDUCTION INTHE SUM OF SQUARES IS POSSIBLE.
+     TERMINATION: XTOL IS TOO SMALL. NO FURTHER IMPROVEMENT IN THE FREE
+     PARAMETERS IS POSSIBLE.
 
-                FINAL L2 NORM OF THE RESIDUALS     .4511366D+00
-                NUMBER OF FUNCTION EVALUATIONS           9
-                NUMBER OF JACOBIAN EVALUATIONS           8
+                FINAL L2 NORM OF THE RESIDUALS     .9432087D-01
+                NUMBER OF FUNCTION EVALUATIONS          13
+                NUMBER OF JACOBIAN EVALUATIONS           6
 
-          WEIGHTED SUM OF SQUARES, S:      2.0352419743921D-01
-          SIGMAF SQUARED ESTIMATE, XS:     3.7689666192446D-03
-          SIGMAF ESTIMATE:                 6.1391910047209D-02
-          FIT QUALITY FACTOR:                  -8.433D+01
-          NO. DEGREES OF FREEDOM:                   54
+          WEIGHTED SUM OF SQUARES, S:      8.8964256604084D-03
+          SIGMAF SQUARED ESTIMATE, XS:     3.0677329863477D-04
+          SIGMAF ESTIMATE:                 1.7514945008043D-02
+          FIT QUALITY FACTOR:                  -1.451D+02
+          NO. DEGREES OF FREEDOM:                   29
 
 
    ORIGINAL PARAMETER NUMBERS
@@ -58,40 +59,39 @@
    ESTIMATED RELATIVE STD DEV OF PARAMETERS
 
 
-        1           3           4           7
-    7.7899D+02  2.3174D-07  8.3499D+04  2.9244D-07
-    2.0913D+01  3.9240D-09  1.0923D+04  2.1671D-08
-    2.6847D-02  1.6933D-02  1.3082D-01  7.4105D-02
+        1           3           4
+    8.1537D+01  9.2341D-07  1.0076D+03
+    2.5944D+00  9.0059D-09  6.0496D+00
+    3.1819D-02  9.7528D-03  6.0042D-03
 
 
-      PDAV=    6.2176D-02      PDRMS=    7.6832D-02
+      PDAV=    1.5859D-02      PDRMS=    1.9524D-02
 
    ESTIMATED PARAMETER CORRELATION MATRIX
      .1000D+01
-     .8531D-01   .1000D+01
-     .1097D+00   .5370D+00   .1000D+01
-    -.6082D-02  -.7586D-02   .1366D+00   .1000D+01
+     .5280D+00   .1000D+01
+    -.2138D+00  -.1129D+00   .1000D+01
 
        AV ARR      SD WR       SD WI       SD WC       AV ARI     # IT
-     8.013D-02   4.295D-02   7.935D-02   6.139D-02   1.611D-01    0
+     1.555D-02   2.084D-02   1.581D-02   1.751D-02   1.399D-01    0
 
        AV RR      SD RR       SD RI       SD RC        SSE    # OPIT
-    -1.147D-02   1.045D-01   5.832D-01   4.031D-01   5.396D-01    0
+    -5.176D-02   2.285D-02   3.968D-01   2.661D-01   2.921D-01    0
 
      **************   END  MAIN  FIT   ***************
 
 
      TERMINATION: FTOL IS TOO SMALL.NO FURTHER REDUCTION INTHE SUM OF SQUARES IS POSSIBLE.
 
-                FINAL L2 NORM OF THE RESIDUALS     .3513535D+04
-                NUMBER OF FUNCTION EVALUATIONS          12
-                NUMBER OF JACOBIAN EVALUATIONS           9
+                FINAL L2 NORM OF THE RESIDUALS     .6902473D+02
+                NUMBER OF FUNCTION EVALUATIONS          11
+                NUMBER OF JACOBIAN EVALUATIONS           5
 
-          WEIGHTED SUM OF SQUARES, S:      6.8657884705432D-01
-          SIGMAF SQUARED ESTIMATE, XS:     1.2714423093599D-02
-          SIGMAF ESTIMATE:                 1.1275825066752D-01
-          FIT QUALITY FACTOR:                  -1.381D+01
-          NO. DEGREES OF FREEDOM:                   54
+          WEIGHTED SUM OF SQUARES, S:      5.4447978215719D-02
+          SIGMAF SQUARED ESTIMATE, XS:     1.8775164901972D-03
+          SIGMAF ESTIMATE:                 4.3330318371750D-02
+          FIT QUALITY FACTOR:                  -8.714D+01
+          NO. DEGREES OF FREEDOM:                   29
 
 
    ORIGINAL PARAMETER NUMBERS
@@ -100,25 +100,24 @@
    ESTIMATED RELATIVE STD DEV OF PARAMETERS
 
 
-        1           3           4           7
-    8.0560D+02  2.3239D-07  8.3392D+04  2.9265D-07
-    2.0467D+01  3.4994D-09  9.7345D+03  1.9622D-08
-    2.5406D-02  1.5058D-02  1.1673D-01  6.7051D-02
+        1           3           4
+    8.1562D+01  9.2292D-07  1.0085D+03
+    2.5790D+00  9.0001D-09  6.0907D+00
+    3.1620D-02  9.7518D-03  6.0393D-03
 
 
-      PDAV=    5.6062D-02      PDRMS=    6.8910D-02
+      PDAV=    1.5804D-02      PDRMS=    1.9420D-02
 
    ESTIMATED PARAMETER CORRELATION MATRIX
      .1000D+01
-     .9153D-01   .1000D+01
-     .1198D+00   .5320D+00   .1000D+01
-    -.5585D-02  -.4999D-02   .1503D+00   .1000D+01
+     .5267D+00   .1000D+01
+    -.2094D+00  -.1120D+00   .1000D+01
 
        AV ARR      SD WR       SD WI       SD WC       AV ARI     # IT
-     7.362D-02   8.611D-02   1.416D-01   1.128D-01   1.616D-01    0
+     1.571D-02   5.183D-02   3.876D-02   4.333D-02   1.401D-01    0
 
        AV RR      SD RR       SD RI       SD RC        SSE    # OPIT
-    -2.860D-03   9.700D-02   5.817D-01   4.013D-01   5.039D-01    0
+    -5.204D-02   2.295D-02   3.978D-01   2.668D-01   2.930D-01    0
 
  **###**  END @DIRECT@ FWT ITERATION FIT   **###**
 

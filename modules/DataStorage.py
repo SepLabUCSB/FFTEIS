@@ -19,11 +19,11 @@ class Experiment():
         
         os.makedirs(path, exist_ok=True)
             
-        self.path     = path    # Save path
-        self.time_file= os.path.join(path, '!times.txt')
-        self.fit_file = os.path.join(path, '!fits.txt')
-        self.spectra  = []
-        self.i        = 0       # Counter for # of spectra
+        self.path      = path    # Save path
+        self.time_file = os.path.join(path, '!times.txt')
+        self.fits_file = os.path.join(path, '!fits.txt')
+        self.spectra   = []
+        self.i         = 0       # Counter for # of spectra
         
         self.waveform = None
         self.correction_factors = None
@@ -43,14 +43,14 @@ class Experiment():
             
             
     def write_fits(self, spectrum):
-        if spectrum.fits == None:
+        if spectrum.fit == None:
             return
         with open(self.fits_file, 'a') as f:
             if self.i == 1:
-                header_line = ','.join(key for key in spectrum.fits.keys())
+                header_line = ','.join(key for key in spectrum.fit.keys())
                 header_line = 'file,' + header_line
                 f.write(header_line + '\n')
-            line = ','.join(str(val) for val in spectrum.fits.values())
+            line = ','.join(str(val) for val in spectrum.fit.values())
             line = f'{spectrum.name},' + line
             f.write(line + '\n')
         

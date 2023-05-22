@@ -28,7 +28,7 @@ from modules.DataProcessor import DataProcessor
 from modules.DataStorage import Experiment, ImpedanceSpectrum
 from modules.Oscilloscope import Oscilloscope
 from modules.Waveform import Waveform
-from modules.Fitter import Fitter
+from modules.Fitter import Fitter, allowed_circuits, predict_circuit
 from modules.TitrationMultiplexer import TitrationMultiplexer
 from modules.MonitorWindow import MonitorWindow
 from modules.funcs import nearest, run
@@ -49,12 +49,11 @@ update_file = os.path.join(this_dir, 'update.txt')
 '''  
 TODO:
 - save metadata
-    
-- x vs t plot
 
 - implement fitting
 
-Tk input prompts disappear behind main window??
+BUGS:
+    - Autosave creates an empty folder ~3s before real folder
 '''
 
 
@@ -299,7 +298,7 @@ class GUI():
                                               
                                               
         # Fitting options
-        circuits = ['RRC', 'Sensor']
+        circuits = allowed_circuits
         self.fit_bool = BooleanVar(topright, value=TRUE)
         Checkbutton(topright, text='Fit', variable=self.fit_bool).grid(
             column=0, row=5, sticky=(E))
@@ -333,12 +332,26 @@ class GUI():
                 
                 Z = abs(Z)
                 
+                # Set line style depending on if we draw fits or not
+                ls = 'o-'
+                if self.fit_bool.get():
+                    ls = 'o'
+                    
+                
                 # Plot |Z| and phase
                 self.ax.set_xscale('linear')
                 self.ax.clear()
                 self.ax2.clear()
-                self.ax2.plot(freqs, phase, 'o-', color='orange')
-                self.ax.plot(freqs, Z, 'o-', color=colors[0])
+                self.ax2.plot(freqs, phase, ls, color='orange')
+                self.ax.plot(freqs, Z, ls, color=colors[0])
+                
+                if self.fit_bool.get():
+                    fit_Z = predict_circuit(self.fit_circuit.get(),
+                                            freqs, self.last_spectrum.fit)
+                    self.ax.plot(freqs, abs(fit_Z), '-', color=colors[0],
+                                 alpha = 0.7)
+                    self.ax2.plot(freqs, np.angle(fit_Z, deg=True), '-',
+                                  color='orange', alpha=0.7)
                 
                 # Set axis labels
                 self.ax.set_xlabel('Frequency/ Hz')

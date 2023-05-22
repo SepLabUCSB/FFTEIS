@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import *
 from tkinter.ttk import *
 from PIL import Image
+import os
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,6 +11,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from .LEVM.LEVM import LEVM_fit
 
 
+allowed_circuits = ('RRC', 'Sensor')
 
 # Default parameter initial guesses/ free or not (bool)
 circuit_params = {
@@ -32,7 +34,51 @@ circuit_params = {
     }
 
 
-
+def predict_circuit(circuit, frequencies, params):
+    '''
+    Return estimated Z(w) at the given frequencies for the chosen circuit.
+    
+    circuit: str, one of "RRC" or "Sensor"
+    frequencies: list or array of frequencies
+    params: dict of {circuit element: value}
+    
+    Returns: np array of shape (len(frequencies), 1)
+    '''
+    
+    def CPE(f, params):
+        '''
+        Params:
+            Q: CPE value
+            n: CPE exponent (0 < n < 1)
+        '''
+        w = 2*np.pi*f
+        Q = params['Q']
+        n = params['n']
+        return 1/(Q*(w*1j)**n)
+    
+    if circuit not in allowed_circuits:
+        return
+    
+    if circuit == 'RRC':
+        w = 2*np.pi*frequencies
+        R1 = params['R1']
+        R2 = params['R2']
+        C = params['C1']
+        Z_C = 1/(1j*w*C)
+        return R1 + (R2*Z_C)/(Z_C + R2)
+    
+    if circuit == 'Sensor':
+        R1 = params['Rs']
+        R2 = params['Rct']
+        Q1 = params['Cdl']
+        n1 = params['ndl']
+        Q2 = params['Cad']
+        n2 = params['nad']
+        Ca = CPE(frequencies, {'Q':Q2, 'n':n2})
+        Cdl = CPE(frequencies, {'Q':Q1, 'n':n1})
+        Z = R1 + 1/(1/Cdl + 1/(R2+Ca))
+        return Z
+        
 
 
 class Fitter():
@@ -137,9 +183,13 @@ class Fitter():
         
         # Run fitting subroutine
         fits = LEVM_fit(freqs, Z, guess, circuit, free)
-        print(fits)
         
-        return
+        # Clean up empty files in main working directory (not sure why LEVM generates these)
+        for file in ('AUXPNTL', 'INFL', 'PNTOUTL'):
+            if os.path.exists(file):
+                os.remove(file)
+                
+        return fits
 
 
 

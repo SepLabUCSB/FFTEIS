@@ -46,7 +46,7 @@ def assign_params(circuit, guess, free):
         d = {
             'R1'  : (1, guess['R1'], free['R1']),
             'R2'  : (4, guess['R2'], free['R2']),
-            'C'   : (3, guess['C'], free['Q1']),
+            'C1'   : (3, guess['C1'], free['C1']),
             'func': 'C'
             }
     
@@ -182,7 +182,7 @@ def params_to_LEVM_format(params):
             i, guess, free = tup
             
             p[i] = guess
-            binary_line[i-1] = free
+            binary_line[i-1] = int(free)
     
     # Force Xi parameter = 1. Used in MEISP, for some reason this makes the 
     # fits less susceptiple to noise
@@ -343,6 +343,8 @@ def write_input_file(file, freqs, Z, params, comment=' '):
     for i in p:
         p[i] = float_to_string(p[i], 8)
     
+    # print(f'Writing inputs to {file}')
+    
     write_comment_line(file, comment)
     write_input_params(file)
     write_initial_params(file, p)
@@ -356,11 +358,10 @@ def write_input_file(file, freqs, Z, params, comment=' '):
 #####                      RUN LEVM                                      #####
 ##############################################################################
 
-def run_LEVM(timeout):
+def run_LEVM(LEVM_path, timeout):
     '''
     Run LEVM using subproccess.run()
-    '''
-    LEVM_path = os.getcwd() + '\LEVM.EXE'
+    # '''
     try:
         subprocess.run([], executable=LEVM_path, timeout=timeout)
         return 0
@@ -454,21 +455,19 @@ def LEVM_fit(freqs, Z, guess, circuit, free_params,
     '''
     # Determine location of LEVM.py
     path = os.path.realpath(__file__)[:-7]
-    os.chdir(path)
-    # LEVM should always be in a subfolder called /LEVM/
-    # Executable is /LEVM/LEVM.exe
-    LEVM_dir = os.getcwd() + '//LEVM/'
-    os.chdir(LEVM_dir)
+    # print(f'LEVM.py path: {path}')
+    
+    LEVM_path = path + 'LEVM.exe'
+    
+    # print(f'LEVM.exe path: {LEVM_path}')
     
     params = assign_params(circuit, guess, free_params)
     
-    write_input_file('INFL', freqs, Z, params, comment)
-    timedout = run_LEVM(timeout = timeout)
+    write_input_file(path + 'INFL', freqs, Z, params, comment)
+    timedout = run_LEVM(LEVM_path, timeout = timeout)
     if timedout == 1:
         return 0
-    fits = extract_params('OUTIN', params)
-    # Return to LEVM.py directory
-    os.chdir(path)
+    fits = extract_params(path + 'OUTIN', params)
     
     return fits
 
@@ -486,47 +485,6 @@ def LEVM_fit(freqs, Z, guess, circuit, free_params,
 #%% Testing
 
 
-## Test fit
-# freqs_test = np.array([  100.,   110.,   170.,   250.,   370.,   520.,   750.,  1000.,
-#         1300.,  2100.,  3100.,  4400.,  6400.,  9000., 11000., 13000.,
-#         17000.])
-
-# Z_test = np.array([18735629.81418155-10792324.49845394j,
-#         18106487.57152111-10452511.00087445j,
-#         15431234.96575839 -9042780.63944462j,
-#         13554600.74026523 -7818661.38105878j,
-#         11934174.40651608 -6816407.65898704j,
-#         10754284.48652496 -6052968.79942763j,
-#         9705710.48484899 -5422119.30431142j,
-#         8862943.24254679 -5106026.52578316j,
-#         8243324.67947413 -4893743.68317177j,
-#         6974518.60516099 -4769951.75226423j,
-#         5788202.41140374 -4764130.03690888j,
-#         4573546.32794566 -4676062.33443935j,
-#         3191922.87380645 -4336168.76449797j,
-#         2067134.89945704 -3704618.20436138j,
-#         1562232.46402468 -3226321.08913762j,
-#         1253126.61199721 -2787895.35068144j,
-#         1014951.57014762 -2072276.43707479j])
-
-# d_test = {'R1': 265151.38227128744,
-#       'R2': 8488042.354616795,
-#       'R3': 41022106.03535404,
-#       'Q1': 3.6273344688041505e-12,
-#       'n1': 1.0,
-#       'Q2': 6.424844265974332e-10,
-#       'n2': 0.6790376343555156}
-
-
-# d_test = {'R1': 2.3911E5,
-#       'R2': 9.7956E6,
-#       'R3': 3.16791E7,
-#       'Q1': 4.07581E-12,
-#       'n1': 1.0,
-#       'Q2': 4.93661E-10,
-#       'n2': 0.704902}
-
-
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
@@ -535,19 +493,33 @@ if __name__ == '__main__':
     params = []
     kets = []
     
-    d = {'Rs': 543,
-            'Rct': 3.44050e+004,
-            'Cad': 4.79434e-007,
-            'phi':8.40000e-001,
-            'Cdl':2.25e-007}   
+    # d = {'Rs': 543,
+    #         'Rct': 3.44050e+004,
+    #         'Cad': 4.79434e-007,
+    #         'phi':8.40000e-001,
+    #         'Cdl':2.25e-007}   
     
-    free_params = {'Rs': 1,
-            'Rct': 1,
-            'Cad': 1,
-            'phi':0,
-            'Cdl':1}
+    # free_params = {'Rs': 1,
+    #         'Rct': 1,
+    #         'Cad': 1,
+    #         'phi':0,
+    #         'Cdl':1}
     
     
+    d = {'R1': 100,
+         'R2': 1000,
+         'C1': 1e-6,}
+    
+    free_params = {'R1': 1,
+         'R2': 1,
+         'C1': 1,}
+    
+    file = r'C:/Users/broehrich/Desktop/EIS Output/2023-05-22/autosave/12-31-04/000001.txt'
+    f, real, im = np.loadtxt(file, skiprows=1, unpack=True)
+    Z = real + 1j*im
+    
+    fits = LEVM_fit(f, Z, d, 'RRC', free_params)
+    print(fits)
 
     # folder = r'C:\Users\BRoehrich\Desktop\EIS fitting\test'
     # true_Rcts = []
@@ -559,49 +531,49 @@ if __name__ == '__main__':
     # fits = r'C:/Users/BRoehrich/Desktop/EIS fitting/test/test.par'
     # _, _, Rs, meisp_Rcts, Cads, phis, Cdls = np.loadtxt(fits, unpack=True)
     
-    folder = r'C:\Users\BRoehrich\Desktop\EIS fitting\real'
-    fits = r'C:\Users\BRoehrich\Desktop\EIS fitting\real\real.par'
-    _, _, Rs, meisp_Rcts, Cads, phis, Cdls = np.loadtxt(fits, unpack=True)
+    # folder = r'C:\Users\BRoehrich\Desktop\EIS fitting\real'
+    # fits = r'C:\Users\BRoehrich\Desktop\EIS fitting\real\real.par'
+    # _, _, Rs, meisp_Rcts, Cads, phis, Cdls = np.loadtxt(fits, unpack=True)
          
-    pattern = r"^\d{4}s\.txt$"
-    i = 0
-    fit_times = []
-    for file in os.listdir(folder):
-        if i > 100:
-            break
-        if not re.match(pattern, file):
-            continue
+    # pattern = r"^\d{4}s\.txt$"
+    # i = 0
+    # fit_times = []
+    # for file in os.listdir(folder):
+    #     if i > 100:
+    #         break
+    #     if not re.match(pattern, file):
+    #         continue
         
-        f, real, im = np.loadtxt(os.path.join(folder,file), skiprows=1, unpack=True)
-        Z = real + 1j*im
+    #     f, real, im = np.loadtxt(os.path.join(folder,file), skiprows=1, unpack=True)
+    #     Z = real + 1j*im
         
-        if i == 0:
-            d = d
-        else:
-            d = params[i-1]
-        # d['Rs'] = re[-1]
+    #     if i == 0:
+    #         d = d
+    #     else:
+    #         d = params[i-1]
+    #     # d['Rs'] = re[-1]
         
-        st = time.time()
-        fits = LEVM_fit(f, Z, d, 'Randles_adsorption', free_params)
-        fit_times.append(time.time() - st)
-        print(i, fits)
+    #     st = time.time()
+    #     fits = LEVM_fit(f, Z, d, 'Randles_adsorption', free_params)
+    #     fit_times.append(time.time() - st)
+    #     print(i, fits)
         
-        params.append(fits)
-        ket = 1/(2*fits['Rct']*fits['Cad'])
-        kets.append(ket)
+    #     params.append(fits)
+    #     ket = 1/(2*fits['Rct']*fits['Cad'])
+    #     kets.append(ket)
         
-        i += 1
+    #     i += 1
     
-    fig, ax = plt.subplots(figsize=(5,5), dpi=150)
-    ax.plot([p['Rct'] for p in params], label='LEVM')
-    ax.plot(meisp_Rcts, label='MEISP')
-    # ax.plot(true_Rcts, label='Actual')
-    ax.set_xlabel('File #')
-    ax.set_ylabel(r'$R_{ct}$/ $\Omega$')
-    ax.legend()
-    fig.tight_layout()
+    # fig, ax = plt.subplots(figsize=(5,5), dpi=150)
+    # ax.plot([p['Rct'] for p in params], label='LEVM')
+    # ax.plot(meisp_Rcts, label='MEISP')
+    # # ax.plot(true_Rcts, label='Actual')
+    # ax.set_xlabel('File #')
+    # ax.set_ylabel(r'$R_{ct}$/ $\Omega$')
+    # ax.legend()
+    # fig.tight_layout()
     
-    print(f'average fit time: {np.mean(fit_times):0.4f}')
+    # print(f'average fit time: {np.mean(fit_times):0.4f}')
     
                                     
                             
