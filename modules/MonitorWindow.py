@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from .funcs import nearest
+from .Fitter import circuit_params
 
 
 plot_options = ['|Z|', 'Phase', 'Parameter', 'k']
@@ -31,6 +32,7 @@ class MonitorWindow:
         self.expt = self.master.experiment
         self.last_spectrum = None
         self.saved_freqs   = []
+        self.saved_params  = {}
         self.xdata = []
         self.ydata = []
         
@@ -133,16 +135,22 @@ class MonitorWindow:
         # append time to xdata
         t = spectrum.timestamp
         self.xdata.append(t - self.expt.spectra[0].timestamp)
-        
+                
         if selection in ('|Z|', 'Phase'):
             idx, _ = nearest(spectrum.freqs, float(option))
             if selection == '|Z|':
                 self.ydata.append(np.absolute(spectrum.Z[idx]))
             elif selection == 'Phase':
                 self.ydata.append(spectrum.phase[idx])
+            return
+        
+        if selection == 'Parameter':
+            val = spectrum.fit[option]
+            self.ydata.append(val)
+            return
+        
         else:
             # TODO: implement once fitting is working
-            print(f'{selection} not yet implemented')
             self.ydata.append(1)
         return
     
@@ -245,17 +253,33 @@ class MonitorWindow:
         '''
         Update the frequency or parameter selection dropdown menu
         '''
-        freqs = list(self.master.waveform.freqs)
-        if freqs is None:
+        if self.display_selection.get() in ('|Z|', 'Phase'):
+            freqs = list(self.master.waveform.freqs)
+            if freqs is None:
+                return
+            if freqs == self.saved_freqs:
+                return
+            self.saved_freqs = list(freqs)
+            self.display_option_menu.set_menu(freqs[0], *freqs)
             return
-        if freqs == self.saved_freqs:
+        
+        if self.display_selection.get() == 'Parameter':
+            circuit = self.master.GUI.fit_circuit.get()
+            params = list(circuit_params[circuit].keys())
+            params.remove('_img')
+            if params == self.saved_params:
+                return
+            self.saved_params = params
+            self.display_option_menu.set_menu(params[0], *params)
             return
-        self.saved_freqs = list(freqs)
-        self.display_option_menu.set_menu(freqs[0], *freqs)
-        return
+        
+        if self.display_selection.get() == 'k':
+            self.display_option_menu.set_menu('', *[''])
+            return
             
         
     def _display_menu_changed(self, option):
+        self.update_option_menu()
         self.redraw_plot()
     
     

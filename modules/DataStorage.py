@@ -21,7 +21,7 @@ class Experiment():
             
         self.path      = path    # Save path
         self.time_file = os.path.join(path, '!times.txt')
-        self.fits_file = os.path.join(path, '!fits.txt')
+        self.fits_file = os.path.join(path, '!fits.csv')
         self.spectra   = []
         self.i         = 0       # Counter for # of spectra
         
@@ -51,7 +51,11 @@ class Experiment():
                 header_line = 'file,' + header_line
                 f.write(header_line + '\n')
             line = ','.join(str(val) for val in spectrum.fit.values())
-            line = f'{spectrum.name},' + line
+            name = spectrum.name
+            if not name:
+                name = f'{self.i:06}.txt'
+                
+            line = f'{name},' + line
             f.write(line + '\n')
         
         

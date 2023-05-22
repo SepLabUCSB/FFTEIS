@@ -61,7 +61,7 @@ class DataProcessor():
             hasattr(self.master.GUI, 'fitter')):
             initial_guess = None
             if len(self.master.experiment.spectra) > 0:
-                initial_guess = self.master.experiment.spectra[-1].fit
+                initial_guess = self.master.experiment.spectra[-1].fit.copy()
             fit = self.master.GUI.fitter.fit(spectrum, initial_guess)
             spectrum.fit = fit
             
