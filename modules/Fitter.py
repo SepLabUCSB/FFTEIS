@@ -140,11 +140,26 @@ class Fitter():
             values.append(value_var)
             bools.append(bool_var)
             row += 1
-            
+        
+        # not ok global var but just clean up before anyone notices
+        global cancelled
+        cancelled = False
+        def _cancel():
+            global cancelled
+            cancelled = True
+            window.destroy()
+        
         Button(frame, text='Done', command=window.destroy).grid(
             row=row, column=0, columnspan=3)
+        Button(frame, text='Cancel', command=_cancel).grid(
+            row=row+1, column=0, columnspan=3)
         
         window.wait_window()
+        
+        if cancelled:
+            del cancelled
+            return 0
+            
         self.guesses = params.copy()
         self.bools = {}
         for (elem, value, boolean) in zip(elems, values, bools):
