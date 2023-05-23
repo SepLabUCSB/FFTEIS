@@ -38,12 +38,11 @@ default_stdout = sys.stdout
 default_stdin  = sys.stdin
 default_stderr = sys.stderr
 
-plt.style.use('ffteis.mplstyle')
-colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-
 this_dir = modules.__file__[:-20]
 update_file = os.path.join(this_dir, 'update.txt')
 
+plt.style.use(os.path.join(this_dir, 'ffteis.mplstyle'))
+colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 
 '''  
@@ -223,7 +222,7 @@ class GUI():
             column=2, row=1, sticky=(E))
         
         # Waveform selection dropdown
-        waveforms = [f.replace('.csv', '') for f in os.listdir('waveforms')
+        waveforms = [f.replace('.csv', '') for f in os.listdir(os.path.join(this_dir,'waveforms'))
                      if f != 'reference']
         waveforms.sort(key=lambda s: [float(x) for x in s.split('_')[:-1]])
         Label(topleft, text='Waveform: ').grid(column=0, row=2, sticky=(E))
@@ -378,7 +377,7 @@ class GUI():
         '''
         Update list of waveforms in dropdown menu
         '''
-        waveforms = [f.replace('.csv', '') for f in os.listdir('waveforms')
+        waveforms = [f.replace('.csv', '') for f in os.listdir(os.path.join(this_dir, 'waveforms'))
                      if f != 'reference']
         waveforms.sort(key=lambda s: [float(x) for x in s.split('_')[:-1]])
         
