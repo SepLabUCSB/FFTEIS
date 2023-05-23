@@ -62,7 +62,7 @@ class MasterModule():
         self.ABORT = False
         self.modules = [self]
         
-        self.experiment = Experiment() # Tracks current Experiment object
+        self.experiment = Experiment(self) # Tracks current Experiment object
         self.waveform   = Waveform()   # Tracks waveform currently on Arb.
       
         
@@ -470,7 +470,7 @@ class GUI():
             print('Invalid resistance entry!')
             return
         
-        self.master.set_experiment(Experiment(name='reference'))
+        self.master.set_experiment(Experiment(self.master, name='reference'))
         self.master.experiment.set_waveform(self.master.waveform)
         
         # Record 5 spectra
@@ -510,7 +510,7 @@ class GUI():
         if not self.check_fitter():
             return
                 
-        self.master.set_experiment(Experiment())
+        self.master.set_experiment(Experiment(self.master))
         self.master.experiment.set_waveform(self.master.waveform)      
         
         run(self.master.Oscilloscope.record_frame)
@@ -535,7 +535,7 @@ class GUI():
         if not self.check_fitter():
             return
         
-        self.master.set_experiment(Experiment(name=name))
+        self.master.set_experiment(Experiment(self.master, name=name))
         self.master.experiment.set_waveform(self.master.waveform)
                
         run(partial(self.master.Oscilloscope.record_duration, t) )
@@ -552,7 +552,7 @@ class GUI():
         name = tk.simpledialog.askstring('Save As', 'Input save name: ')
         if not name:
             return
-        temp_expt = Experiment(name)
+        temp_expt = Experiment(self.master, name)
         temp_expt.set_waveform(self.master.experiment.waveform)
         for spectrum in self.master.experiment.spectra:
             spectrum.experiment = temp_expt
@@ -580,10 +580,10 @@ class GUI():
         if os.path.exists(update_file):
             os.remove(update_file)
         
-        self.master.set_experiment(Experiment())
+        self.master.set_experiment(Experiment(self.master))
         self.master.experiment.set_waveform(self.master.waveform)
         
-        expt = Experiment(name = 'temp')
+        expt = Experiment(self.master, name = 'temp')
         expt.set_waveform(self.master.waveform)
         
         
@@ -634,7 +634,7 @@ class GUI():
             os.remove(update_file)
         message_popup('Ready to go.\nMake sure NOVA multiplexing protocol is configured for the correct number of sensors.\nClick "OK" before running NOVA program.')
         
-        self.master.set_experiment(Experiment(name=name))
+        self.master.set_experiment(Experiment(self.master, name=name))
         self.master.experiment.set_waveform(self.master.waveform)
         
 
@@ -813,19 +813,19 @@ if __name__ == '__main__':
     run(dataProcessor.run)
     
     root = Tk()
-    # try:
-    gui = GUI(root, master)
-    
-    root.after(1000, gui.update_plot)
-    root.mainloop()
-    root.quit()
-    gui.willStop = True
+    try:
+        gui = GUI(root, master)
         
-    # except Exception as e:
-    #     sys.stdout = default_stdout
-    #     sys.stdin  = default_stdin
-    #     sys.stderr = default_stderr
-    #     print(traceback.format_exc())
+        root.after(1000, gui.update_plot)
+        root.mainloop()
+        root.quit()
+        gui.willStop = True
+        
+    except Exception as e:
+        sys.stdout = default_stdout
+        sys.stdin  = default_stdin
+        sys.stderr = default_stderr
+        print(traceback.format_exc())
     
     gui.willStop = True
     sys.stdout = default_stdout

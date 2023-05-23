@@ -66,7 +66,7 @@ class TitrationMultiplexer:
     
     def make_experiment(self):
         # Creates a local Experiment which will save averaged spectra
-        self.expt = Experiment(name = self.name)
+        self.expt = Experiment(self.master, name = self.name)
         self.expt.set_waveform(self.master.waveform)
     
     def check_action(self):

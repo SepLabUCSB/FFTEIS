@@ -8,7 +8,7 @@ import pandas as pd
 
 class Experiment():
     
-    def __init__(self, name=None):
+    def __init__(self, master, name=None):
         path = os.path.expanduser('~\Desktop\EIS Output')
         path = os.path.join(path, datetime.now().strftime('%Y-%m-%d'))
         if name:
@@ -17,9 +17,11 @@ class Experiment():
             path = os.path.join(path, 'autosave')
             path = os.path.join(path, datetime.now().strftime('%H-%M-%S'))
         
+        self.master    = master
         self.path      = path    # Save path
         self.time_file = os.path.join(path, '!times.txt')
         self.fits_file = os.path.join(path, '!fits.csv')
+        self.meta_file = os.path.join(path, '!metadata.txt')
         self.spectra   = []
         self.i         = 0       # Counter for # of spectra
         
@@ -34,6 +36,8 @@ class Experiment():
         spectrum.save()
         self.write_time(spectrum)
         self.write_fits(spectrum)
+        if not os.path.exists(self.meta_file):
+            self.write_metadata()
         
     
     def write_time(self, spectrum):
@@ -56,6 +60,23 @@ class Experiment():
                 
             line = f'{name},' + line
             f.write(line + '\n')
+            
+    def write_metadata(self):
+        with open(self.meta_file, 'w') as f:
+            f.write(f"Meta file created on {datetime.now().strftime('%a %d %b %Y, %I:%M%p')}\n\n")
+            f.write(f'Waveform: {self.waveform.name()}\n')
+            f.write(f"Vpp: {self.master.GUI.amplitude_input.get('1.0', 'end')[:-1]} mV\n")
+            f.write(f"User-set NOVA current range: {self.master.GUI.current_range.get()}\n\n")
+            f.write(f"Filter correction: {self.master.GUI.ref_correction_bool.get()}\n")
+            f.write(f"Frequencies: {self.waveform.freqs}\n\n")
+            f.write(f"Z correction factors: {self.master.DataProcessor.Z_factors}\n\n")
+            f.write(f"Phase corrections: {self.master.DataProcessor.phase_factors}\n\n")
+            f.write(f'Fitting: {self.master.GUI.fit_bool.get()}\n')
+            if (self.master.GUI.fit_bool.get() and
+                hasattr(self.master.GUI, 'fitter')):
+                f.write(f'Fit circuit: {self.master.GUI.fitter.circuit}\n')
+                f.write(f'Initial guesses for fit: {self.master.GUI.fitter.guesses}\n')
+            
         
         
     def set_waveform(self, Waveform):
