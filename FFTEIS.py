@@ -50,10 +50,6 @@ update_file = os.path.join(this_dir, 'update.txt')
 TODO:
 - save metadata
 
-- *** handle bad fits ***
-
-BUGS:
-    - Autosave creates an empty folder ~3s before real folder
 '''
 
 

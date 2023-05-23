@@ -17,8 +17,6 @@ class Experiment():
             path = os.path.join(path, 'autosave')
             path = os.path.join(path, datetime.now().strftime('%H-%M-%S'))
         
-        os.makedirs(path, exist_ok=True)
-            
         self.path      = path    # Save path
         self.time_file = os.path.join(path, '!times.txt')
         self.fits_file = os.path.join(path, '!fits.csv')
@@ -30,6 +28,7 @@ class Experiment():
         
     
     def append_spectrum(self, spectrum):
+        os.makedirs(self.path, exist_ok=True)
         self.spectra.append(spectrum)
         self.i = len(self.spectra)
         spectrum.save()
