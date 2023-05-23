@@ -48,10 +48,7 @@ update_file = os.path.join(this_dir, 'update.txt')
 
 '''  
 TODO:
-- variable arb sample rate depending on max freq
 - change scope tdiv based on min freq
-
-- titration multiplex fitting
 '''
 
 
