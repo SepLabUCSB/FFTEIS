@@ -1,2 +1,16 @@
 nn/*
-__pycache__*
+*__pycache__*
+update.txt
+
+
+modules/LEVM/AUXPNTL
+modules/LEVM/AUXPNTL1
+modules/LEVM/INFL
+modules/LEVM/LINOTL
+modules/LEVM/LINOTLN
+modules/LEVM/LINOTR
+modules/LEVM/LINOTRL.DAT
+modules/LEVM/LINOUT
+modules/LEVM/LVOUT
+modules/LEVM/OUTIN
+modules/LEVM/PNTOUTL
