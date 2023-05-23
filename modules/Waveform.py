@@ -10,9 +10,8 @@ else:
     from .funcs import nearest
 
 
-# !!! TODO: change this
-
-waveform_dir = r'C:/Users/BRoehrich/Desktop/git/FFTEIS/waveforms'
+#waveform_dir = r'C:/Users/BRoehrich/Desktop/git/FFTEIS/waveforms'
+#waveform_dir = __file__[:-9]+'/waveforms'
 
 
 def generate_waveform(f0, f1, n_pts):
@@ -132,9 +131,9 @@ class Waveform():
         return
     
     
-    def to_csv(self):
+    def to_csv(self, path):
           
-        path = waveform_dir
+#        path = waveform_dir
         
         name = self.name()
         name += '.csv'

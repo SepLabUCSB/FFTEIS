@@ -109,7 +109,7 @@ class TitrationMultiplexer:
         fnames = [f'{sensor}_{self.conc}.txt' for sensor in self.sensors]
         if not all([s in self.saved_names for s in fnames]):
             return False
-        
+        print(f'Finished all recording for {self.conc}\n')
         return True
         
     
@@ -137,10 +137,12 @@ class TitrationMultiplexer:
         avg            = spectra[0].average(spectra[1:])
         avg.name       = fname
         avg.experiment = self.expt
+        avg.fit = self.master.GUI.fitter.fit(avg)
         self.expt.append_spectrum(avg)
         self.saved_specs.extend(spectra)
         self.saved_names.append(fname)
         self.i += 1
+        print(f'Finished {sensor}, {self.conc}')
         return
     
     

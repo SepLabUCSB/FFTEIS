@@ -119,7 +119,8 @@ class Fitter():
         ax.imshow(img)
         ax.set_xticks([])
         ax.set_yticks([])
-        ax.spines[['left', 'right', 'top', 'bottom']].set_visible(False)
+        for sp in ['left', 'right', 'top', 'bottom']:
+            ax.spines[sp].set_visible(False)
         
         
         row = 0

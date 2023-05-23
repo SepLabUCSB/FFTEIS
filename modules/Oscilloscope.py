@@ -27,8 +27,8 @@ class Oscilloscope():
         self.buffer = ADCDataBuffer
         
         self.inst = None
-        self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDED5R0471::INSTR'   #sepunaru
-        # self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDEX5R5381::INSTR' #plaxco
+#        self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDED5R0471::INSTR'   #sepunaru
+        self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDEX5R5381::INSTR' #plaxco
         self._is_recording = False
         
         run(self.initialize)
@@ -296,7 +296,6 @@ if __name__ == '__main__':
     t = np.linspace(0,1.4, len(v1))
     cutoff_id = min([i for i, ti in enumerate(t) if ti > 1])
     
-    #%%
     v1 = v1[:cutoff_id]
     v2 = v2[:cutoff_id]
     

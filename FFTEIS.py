@@ -48,8 +48,10 @@ update_file = os.path.join(this_dir, 'update.txt')
 
 '''  
 TODO:
-- save metadata
+- variable arb sample rate depending on max freq
+- change scope tdiv based on min freq
 
+- titration multiplex fitting
 '''
 
 
@@ -295,7 +297,7 @@ class GUI():
                                               
         # Fitting options
         circuits = allowed_circuits
-        self.fit_bool = BooleanVar(topright, value=TRUE)
+        self.fit_bool = BooleanVar(topright, value=FALSE)
         Checkbutton(topright, text='Fit', variable=self.fit_bool).grid(
             column=0, row=5, sticky=(E))
         self.fit_circuit = StringVar()
@@ -697,7 +699,7 @@ class GUI():
         opt_wf  = Waveform(freqs  = base_wf.freqs,
                            phases = base_wf.phases,
                            amps   = amps)
-        opt_wf.to_csv()        
+        opt_wf.to_csv(path=os.path.join(this_dir, 'waveforms'))        
         self.update_waveform_dropdown()        
         return
     
@@ -750,7 +752,7 @@ class GUI():
                 return
             wf = Waveform()
             wf.generate(f_0, f_1, n_freqs)
-            wf.to_csv()
+            wf.to_csv(path=os.path.join(this_dir, 'waveforms'))
             print(f'Generated {wf.name()}')
             self.update_waveform_dropdown()
             popup.destroy()
