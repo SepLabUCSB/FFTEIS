@@ -101,7 +101,7 @@ class Arb():
         self.master = master
         self.master.register(self)
         
-#        self._name = 'USB0::0x1AB1::0x0643::DG8A232302748::INSTR' #sepunaru
+        # self._name = 'USB0::0x1AB1::0x0643::DG8A232302748::INSTR' #sepunaru
         self._name = 'USB0::0x1AB1::0x0643::DG8A232202635::INSTR' #plaxco
         self.initialize()
         
@@ -113,7 +113,7 @@ class Arb():
     
     def send_waveform(self, Waveform, Vpp):
         max_freq = max(Waveform.freqs)
-        sample_freq = min(10000, 10*max_freq)
+        sample_freq = min(100000, 10*max_freq)
         sample_freq = int(sample_freq)
         v = Waveform.time_domain(srate=sample_freq)
         self.turn_off()
