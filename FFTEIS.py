@@ -297,7 +297,7 @@ class GUI():
         Checkbutton(topright, text='Fit', variable=self.fit_bool).grid(
             column=0, row=5, sticky=(E))
         self.fit_circuit = StringVar()
-        fitmenu = OptionMenu(topright, self.fit_circuit, circuits[0], 
+        fitmenu = OptionMenu(topright, self.fit_circuit, circuits[1], 
                              *circuits, command=self.init_fitter)
         fitmenu.grid(column=1, row=5, sticky=(E,W))
         
