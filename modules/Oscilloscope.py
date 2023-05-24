@@ -14,6 +14,21 @@ else:
     from .funcs import run    
 
 
+tdivs = ['1NS', '2NS', '5NS', '10NS', '20NS', '50NS', 
+         '100NS', '200NS', '500NS', '1US', '2US', '5US', 
+         '10US', '20US', '50US', '100US', '200US', '500US', 
+         '1MS', '2MS', '5MS', '10MS', '20MS', '50MS', 
+         '100MS', '200MS', '500MS', '1S', '2S', '5S', 
+         '10S', '20S', '50S']
+
+frame_times = [1e-09, 2e-09, 5e-09, 1e-08, 2e-08, 5e-08, 
+               1e-07, 2e-07, 5e-07, 1e-06, 2e-06, 5e-06, 
+               1e-05, 2e-05, 5e-05, 0.0001, 0.0002, 0.0005, 
+               0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 
+               0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 
+               10.0, 20.0, 50.0]
+
+
 class Oscilloscope():
     '''
     Class for communicating with an SDS1202X-E oscilloscope
@@ -27,7 +42,7 @@ class Oscilloscope():
         self.buffer = ADCDataBuffer
         
         self.inst = None
-#        self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDED5R0471::INSTR'   #sepunaru
+        # self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDED5R0471::INSTR'   #sepunaru
         self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDEX5R5381::INSTR' #plaxco
         self._is_recording = False
         
@@ -110,10 +125,33 @@ class Oscilloscope():
             'i_range': i_range,
             }      
         return self.recording_params.copy()
+    
+    
+    def autoset_tdiv(self):
+        '''
+        Optimize tdiv based on minimum requested EIS frequency
+        '''
+        if not self.master.waveform:
+            return
+        
+        tdiv = float(self.inst.query('TDIV?')[5:-2])
+        
+        min_freq = min(self.master.waveform.freqs)
+        min_time = 1/min_freq
+        
+        idx = min([i for i, t in enumerate(frame_times) 
+                   if 14*t >= min_time]) # 14 tdivs per frame
+        
+        if frame_times[idx] == tdiv:
+            return
+        
+        self.inst.write(f'TDIV {tdivs[idx]}')
+        return
         
     
     
-    def record_frame(self, timeout = 10, add_to_buffer=True, name=None):
+    def record_frame(self, timeout = 10, add_to_buffer=True, name=None,
+                     auto_tdiv=True):
         # Record one frame of data.
         # Returns raw voltages
         
@@ -122,7 +160,12 @@ class Oscilloscope():
         
         if self._is_recording:
             return
+        
+        if auto_tdiv:
+            self.autoset_tdiv()
+        
         self._is_recording = True
+        
         
         recording_params = self.get_recording_params()
                 
@@ -219,7 +262,8 @@ class Oscilloscope():
         while i < 13:
             
             # Record a frame
-            v1, v2 = self.record_frame(add_to_buffer = False)
+            v1, v2 = self.record_frame(add_to_buffer = False, 
+                                       auto_tdiv = False)
             
             self.get_recording_params()
             vdiv1 = self.recording_params['vdiv1']
