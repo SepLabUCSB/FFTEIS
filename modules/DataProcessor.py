@@ -96,6 +96,18 @@ class DataProcessor():
         
         
         cutoff_time = 1/self.applied_freqs[0]
+        
+        cnt = 0
+        tot = 0
+
+        while tot < total_time:
+            tot += cutoff_time
+            if tot >= total_time:
+                break
+            cnt += 1
+            
+        cutoff_time = cnt*cutoff_time
+        
         cutoff_id   = max([i for i, ti in enumerate(t) if ti <= cutoff_time])
         cutoff_id  += 1
         
