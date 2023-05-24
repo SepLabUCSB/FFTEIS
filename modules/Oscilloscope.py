@@ -134,6 +134,9 @@ class Oscilloscope():
         if not self.master.waveform:
             return
         
+        if self.master.GUI.recording_mode.get() == 'Averaging':
+            return
+        
         tdiv = float(self.inst.query('TDIV?')[5:-2])
         
         min_freq = min(self.master.waveform.freqs)

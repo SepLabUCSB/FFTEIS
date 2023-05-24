@@ -107,9 +107,9 @@ class DataProcessor():
             cnt += 1
             
         cutoff_time = cnt*cutoff_time
+        # print(f'Averaging over {cnt} spectra. Using {cutoff_time} s of data')
         
-        cutoff_id   = max([i for i, ti in enumerate(t) if ti <= cutoff_time])
-        cutoff_id  += 1
+        cutoff_id = min([i for i, ti in enumerate(t) if ti > cutoff_time])
         
         t = t[:cutoff_id]
         v = v[:cutoff_id]
