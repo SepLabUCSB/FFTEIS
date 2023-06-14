@@ -102,7 +102,7 @@ class Fitter():
         params = circuit_params[selection].copy()
         imgfile = params['_img']
         params.pop('_img')
-        
+                
         window = Toplevel()
         window.title('Fitting options')
         window.attributes('-topmost', 1)
@@ -119,7 +119,8 @@ class Fitter():
         ax.imshow(img)
         ax.set_xticks([])
         ax.set_yticks([])
-        ax.spines[['left', 'right', 'top', 'bottom']].set_visible(False)
+        for sp in ['left', 'right', 'top', 'bottom']:
+            ax.spines[sp].set_visible(False)
         
         
         row = 0
@@ -155,7 +156,7 @@ class Fitter():
             row=row+1, column=0, columnspan=3)
         
         window.wait_window()
-        
+                
         if cancelled:
             del cancelled
             return 0
