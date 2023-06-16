@@ -7,13 +7,10 @@ from tkinter import filedialog
 
 plt.style.use('../ffteis.mplstyle')
 
-target = 'Vancomycin'
 
-# file = filedialog.askopenfilename()
-# if not file:
-#     sys.exit()
-file = r'C:/Users/BRoehrich/Desktop/06-13-2023-Vancomycin titration few datapoints/!fits16.csv'
-
+file = filedialog.askopenfilename()
+if not file:
+    sys.exit()
 
 #### Parse data file ####    
 df = pd.read_csv(file)
@@ -48,18 +45,17 @@ for conc in concs:
         this_avg[col] = np.mean(df2[col])
         this_std[col] = np.std(df2[col])    
     
-    avgs[conc] = this_avg
-    stds[conc] = this_std
-    
+    avgs[float(conc)] = this_avg
+    stds[float(conc)] = this_std
+
+   
     
 
 avgdf = pd.DataFrame(avgs).transpose()
 stddf = pd.DataFrame(stds).transpose()
 
 avgdf = avgdf.rename_axis('conc').reset_index()
-avgdf.astype({'conc': 'float'})
 stddf = stddf.rename_axis('conc').reset_index()
-stddf.astype('conc', 'float'})
 
 combined_df = pd.concat(
     (avgdf, stddf.rename(lambda s:f'{s}_std', axis=1)),
@@ -73,14 +69,14 @@ concs = [float(c) for c in concs]
 
 #### Making plots ####
 
-if '0' in avgdf.index:
+if 0 in concs:
     concs.remove(0)
-    avgdf.drop('0', axis=0, inplace=True)
-    stddf.drop('0', axis=0, inplace=True)
+    avgdf = avgdf[avgdf['conc'] != 0]
+    stddf = stddf[stddf['conc'] != 0]
     
 concs.sort()
-avgdf = avgdf.sort_values('conc', ascending=True)
-stddf = stddf.sort_values('conc', ascending=True)
+avgdf = avgdf.sort_values('conc', ascending=True).reset_index()
+stddf = stddf.sort_values('conc', ascending=True).reset_index()
 
 
 fig, ax = plt.subplots(figsize=(5,5), dpi=100)
@@ -90,7 +86,7 @@ for col in ['Rs', 'Rct', 'Cdl', 'Cads']:
     ax.errorbar(concs, avgdf[col], stddf[col], marker='o', linestyle='--',
                 capsize=4, elinewidth=2, label= col)
 
-ax.set_xlabel(f'{target}/ M')
+ax.set_xlabel('[Target]/ M')
 ax.set_ylabel('Normalized Parameter/ a.u.')
 ax.set_xscale('log')
 ax.legend()
@@ -100,7 +96,7 @@ fig.tight_layout()
 fig, ax = plt.subplots(figsize=(5,5), dpi=100)
 ax.errorbar(concs, avgdf['ket'], stddf['ket'], marker='o', linestyle='--',
                 capsize=4, elinewidth=2)
-ax.set_xlabel(f'{target}/ M')
+ax.set_xlabel('[Target]/ M')
 ax.set_ylabel(r'$k_{et}$/ $s^{-1}$')
 ax.set_xscale('log')
 fig.tight_layout()
