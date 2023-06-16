@@ -9,11 +9,11 @@ import os
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-from functools import partial
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib
 from modules.Fitter import predict_circuit, Fitter
 
 plt.style.use('ffteis.mplstyle')
+matplotlib.use('Qt5Agg')
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 
@@ -60,7 +60,7 @@ def fit_all(ax, folder, sequential_fits:bool, plot_every:int, fitter):
         ax.set_xlabel('Frequency/ Hz')
         ax2.set_ylabel(r'|Z|/ $\Omega$')
         ax.set_ylabel(r'Phase/ $\degree$')
-        plt.show()
+        # plt.show()
     
     
     i = 0
@@ -131,6 +131,7 @@ def fit_all(ax, folder, sequential_fits:bool, plot_every:int, fitter):
         ax.set_title(file)
         fig.tight_layout()
         fig.canvas.draw_idle()
+        # plt.show()
         plt.pause(0.1)
                 
         i += 1
@@ -166,26 +167,24 @@ if __name__ == '__main__':
         end(root)
         sys.exit()
         
-    # sequential_fits = prompt('Sequential fits: ', ['0', '1'])
-    # if sequential_fits in {'q', 'quit', 'exit'}:
-    #     end(root)
+    sequential_fits = prompt('Sequential fits (0/1): ', ['0', '1'])
+    if sequential_fits in {'q', 'quit', 'exit'}:
+        end(root)
+        sys.exit()
         
-    # plot_every = prompt('Plot every: ', ['0', '1', '2', '5', '10',
-    #                                      '25', '50', '100', '250',
-    #                                      '500', '1000'])
-    # if plot_every in {'q', 'quit', 'exit'}:
-    #     end(root)
+    plot_every = prompt('Plot every (0 for no plotting): ', 
+                        ['0', '1', '2', '5', '10',
+                        '25', '50', '100', '250',
+                        '500', '1000'])
+    if plot_every in {'q', 'quit', 'exit'}:
+        end(root)
+        sys.exit()
     
     end(root)    
     fig, ax = plt.subplots(figsize=(6,5), dpi=80)
-    fit_all(ax, folder, 1, 1, fitter)
-    # func = partial(fit_all, folder, 0, 1, fitter)
-    
-    # window = fit_all(folder, sequential_fits=0, plot_every=1,
-    #         fitter=fitter)
-    # if window:
-    #     window.wait_window()
-    # end(root)
+    fit_all(ax, folder, bool(int(sequential_fits)), 
+            int(plot_every), fitter)
+
     
     
     
