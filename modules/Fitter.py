@@ -102,7 +102,7 @@ class Fitter():
         params = circuit_params[selection].copy()
         imgfile = params['_img']
         params.pop('_img')
-        
+                
         window = Toplevel()
         window.title('Fitting options')
         window.attributes('-topmost', 1)
@@ -156,7 +156,7 @@ class Fitter():
             row=row+1, column=0, columnspan=3)
         
         window.wait_window()
-        
+                
         if cancelled:
             del cancelled
             return 0

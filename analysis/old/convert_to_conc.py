@@ -12,11 +12,11 @@ colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 # 7/27
 # file = r'Z:/Projects/Brian/5 - Plaxco collab/20220727 vanco invivo/meisp_fits.xlsx'
 # 9/14
-file = r'Z:/Projects/Brian/5 - Plaxco collab/20220914 vanco invivo 25mV good/meisp_fits.xlsx'
+# file = r'Z:/Projects/Brian/5 - Plaxco collab/20220914 vanco invivo 25mV good/meisp_fits.xlsx'
 # 10/6 rat 1
 # file = r'Z:/Projects/Brian/5 - Plaxco collab/20221005 vanco invivo 25mV 2 rats/rat 1 meisp_fits.xlsx'
 # 10/6 rat 2
-# file = r'Z:/Projects/Brian/5 - Plaxco collab/20221005 vanco invivo 25mV 2 rats/rat 2 meisp_fits.xlsx'
+file = r'Z:/Projects/Brian/5 - Plaxco collab/20221005 vanco invivo 25mV 2 rats/rat 2 meisp_fits.xlsx'
 
 # 11/18 fast in-vitro recording
 # file = r'C:/Users/BRoehrich/Desktop/EIS-EAB data/2022-11-18 fast recording vanco invitro/meisp_fits.xlsx'
@@ -154,7 +154,7 @@ ax.plot(t/60, conc/1e-6, '.', color = colors[3], alpha=0.1)
 ax.set_xlabel('Time/ min')
 ax.set_ylabel(r'[Vancomycin]/ M')
 # ax.set_yscale('log')
-ax.set_ylim(-10, 105)
+# ax.set_ylim(-10, 105)
 # ax.text(12, 4e-6,'Applied conc', color='k')
 # ax.text(10, 7e-4, 'Measured conc', color=colors[2])
 
