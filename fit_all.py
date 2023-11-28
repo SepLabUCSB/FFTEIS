@@ -60,8 +60,28 @@ def fit_all(ax, folder, sequential_fits:bool, plot_every:int, fitter):
         ax.set_xlabel('Frequency/ Hz')
         ax2.set_ylabel(r'|Z|/ $\Omega$')
         ax.set_ylabel(r'Phase/ $\degree$')
-        # plt.show()
     
+    
+    # Initialize times list
+    times_list = []
+    with open(os.path.join(folder, f'!times.txt'), 'r') as f:
+        for line in f:
+            times_list.append(float(line))
+    t0 = times_list[0]
+    
+    
+    # Get number of sensors in this experiment
+    sensors = list()
+    for file in os.listdir(folder):
+        ln = open(os.path.join(folder, file), 'r').readline()
+        if not ln.startswith('<Frequency>'):
+            continue
+        if '_' in file:
+            sensor, _ = file.split('_')
+            if sensor not in sensors:
+                sensors.append(sensor)
+    n_sensors = len(sensors)
+        
     
     i = 0
     fits = None
@@ -86,14 +106,27 @@ def fit_all(ax, folder, sequential_fits:bool, plot_every:int, fitter):
         fits = fitter.fit(spec, initial_guess) 
         print(f'{file}: {fits}')
         
+        # Find the correct time
+        if '_' in file:
+            sensor, idx = file[:-4].split('_')
+            sensor_idx = [j for j, sens in enumerate(sensors) if sens==sensor][0]
+            idx = int(idx)
+            
+            idx = idx*n_sensors + int(sensor_idx)
+            
+            t = times_list[idx] - t0
+        else:
+            t = times_list[i] - t0
+            
+        
         # Save to file
         with open(fits_file, 'a') as f:
             if i == 0:
                 header_line = ','.join(key for key in fits.keys())
-                header_line = 'file,' + header_line
+                header_line = 'file,time,' + header_line
                 f.write(header_line + '\n')
             line = ','.join(str(val) for val in fits.values())
-            line = f'{file},' + line
+            line = f'{file},{t},' + line
             f.write(line + '\n')
             
         # Draw on plot
@@ -135,6 +168,7 @@ def fit_all(ax, folder, sequential_fits:bool, plot_every:int, fitter):
         plt.pause(0.1)
                 
         i += 1
+    return
         
         
 
