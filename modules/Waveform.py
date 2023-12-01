@@ -31,9 +31,8 @@ def generate_waveform(f0, f1, n_pts):
     # All frequencies must be interger multiples of the lowest frequency,
     # and should not be 2nd harmonics of each other
     # Avoid harmonics of 60 Hz as well (US mains power frequencies)
-    
     base_freq = f0
-    valid_freqs = [n*base_freq for n in range(1, 1 + int(f1//base_freq))]
+    valid_freqs = [n*base_freq for n in range(1, 1 + int(f1/base_freq))]
     
     for i in range(n_pts):
         f = freqs[i]
