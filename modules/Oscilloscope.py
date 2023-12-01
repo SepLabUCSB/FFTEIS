@@ -135,7 +135,7 @@ class Oscilloscope():
             return 0
         
         if self.master.GUI.recording_mode.get() == 'Averaging':
-            return 0
+            return 100
         
         tdiv = float(self.inst.query('TDIV?')[5:-2])
         
