@@ -306,7 +306,7 @@ class GUI():
             column=0, row=6, sticky=(E))
         self.recording_mode = StringVar()
         recording_mode_menu = OptionMenu(topright, self.recording_mode,
-                                  'Averaging', *['Averaging', 'Fastest'])
+                                  'Fastest', *['Fastest', 'Averaging'])
         recording_mode_menu.grid(column=1, row=6, sticky=(E,W))
         
                               
