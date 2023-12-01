@@ -144,7 +144,10 @@ class MonitorWindow:
             return
         
         if selection == 'Parameter':
-            val = spectrum.fit[option]
+            try:
+                val = spectrum.fit[option]
+            except:
+                val = 0
             self.ydata.append(val)
             return
         

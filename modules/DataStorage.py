@@ -48,11 +48,12 @@ class Experiment():
     def write_fits(self, spectrum):
         if spectrum.fit == None:
             return
-        with open(self.fits_file, 'a') as f:
-            if self.i == 1:
+        if not os.path.exists(self.fits_file):
+            with open(self.fits_file, 'w') as f:
                 header_line = ','.join(key for key in spectrum.fit.keys())
                 header_line = 'file,time,' + header_line
                 f.write(header_line + '\n')
+        with open(self.fits_file, 'a') as f:
             line = ','.join(str(val) for val in spectrum.fit.values())
             name = spectrum.name
             t    = spectrum.timestamp
