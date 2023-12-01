@@ -146,11 +146,11 @@ class Oscilloscope():
                    if 14*t >= min_time]) # 14 tdivs per frame
         
         if frame_times[idx] == tdiv:
-            return 0
+            return 14*frame_times[idx]
         
         
         self.inst.write(f'TDIV {tdivs[idx]}')
-        return frame_times[idx]
+        return 14*frame_times[idx]
         
     
     
@@ -166,7 +166,6 @@ class Oscilloscope():
         
         if auto_tdiv:
             timeout += self.autoset_tdiv()
-        print(timeout)
         
         self._is_recording = True
         
