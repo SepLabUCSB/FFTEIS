@@ -60,8 +60,12 @@ class DataProcessor():
         if (self.master.GUI.fit_bool.get() and
             hasattr(self.master.GUI, 'fitter')):
             initial_guess = None
-            if len(self.master.experiment.spectra) > 0:
-                initial_guess = self.master.experiment.spectra[-1].fit.copy()
+            try:
+                if len(self.master.experiment.spectra) > 0:
+                    initial_guess = self.master.experiment.spectra[-1].fit.copy()
+            except:
+                # Previous fit failed, use default guess
+                pass
             fit = self.master.GUI.fitter.fit(spectrum, initial_guess)
             
             if type(fit) == dict:            

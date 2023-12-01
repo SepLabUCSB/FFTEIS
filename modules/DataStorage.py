@@ -51,14 +51,15 @@ class Experiment():
         with open(self.fits_file, 'a') as f:
             if self.i == 1:
                 header_line = ','.join(key for key in spectrum.fit.keys())
-                header_line = 'file,' + header_line
+                header_line = 'file,time,' + header_line
                 f.write(header_line + '\n')
             line = ','.join(str(val) for val in spectrum.fit.values())
             name = spectrum.name
+            t    = spectrum.timestamp
             if not name:
                 name = f'{self.i:06}.txt'
                 
-            line = f'{name},' + line
+            line = f'{name},{t},' + line
             f.write(line + '\n')
             
     def write_metadata(self):

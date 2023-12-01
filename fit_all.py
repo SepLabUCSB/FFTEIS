@@ -64,10 +64,11 @@ def fit_all(ax, folder, sequential_fits:bool, plot_every:int, fitter):
     
     # Initialize times list
     times_list = []
-    with open(os.path.join(folder, f'!times.txt'), 'r') as f:
-        for line in f:
-            times_list.append(float(line))
-    t0 = times_list[0]
+    if os.path.exists(os.path.join(folder, f'!times.txt')):
+        with open(os.path.join(folder, f'!times.txt'), 'r') as f:
+            for line in f:
+                times_list.append(float(line))
+        t0 = times_list[0]
     
     
     # Get number of sensors in this experiment
@@ -113,10 +114,13 @@ def fit_all(ax, folder, sequential_fits:bool, plot_every:int, fitter):
             idx = int(idx)
             
             idx = idx*n_sensors + int(sensor_idx)
-            
-            t = times_list[idx] - t0
         else:
-            t = times_list[i] - t0
+            idx = i
+        
+        if times_list:
+            t = times_list[idx] - times_list[0]
+        else:
+            t = idx
             
         
         # Save to file

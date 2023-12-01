@@ -379,7 +379,8 @@ def run_LEVM(LEVM_path, timeout):
     Run LEVM using subproccess.run()
     # '''
     try:
-        subprocess.run([], executable=LEVM_path, timeout=timeout)
+        subprocess.run(['ls', '-l'],
+    stdout = subprocess.DEVNULL, executable=LEVM_path, timeout=timeout)
         return 0
     except subprocess.TimeoutExpired:
         print('LEVM.exe timed out')
@@ -481,6 +482,7 @@ def LEVM_fit(freqs, Z, guess, circuit, free_params,
     write_input_file('INFL', freqs, Z, params, comment)
     timedout = run_LEVM(LEVM_path, timeout = timeout)
     if timedout == 1:
+        os.chdir(original_path)
         return 0
     fits = extract_params('OUTIN', params)
     
