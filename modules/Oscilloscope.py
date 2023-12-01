@@ -42,8 +42,8 @@ class Oscilloscope():
         self.buffer = ADCDataBuffer
         
         self.inst = None
-        # self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDED5R0471::INSTR'   #sepunaru
-        self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDEX5R5381::INSTR' #plaxco
+        self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDED5R0471::INSTR'   #sepunaru
+        # self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDEX5R5381::INSTR' #plaxco
         self._is_recording = False
         
         run(self.initialize)
@@ -132,24 +132,25 @@ class Oscilloscope():
         Optimize tdiv based on minimum requested EIS frequency
         '''
         if not self.master.waveform:
-            return
+            return 0
         
         if self.master.GUI.recording_mode.get() == 'Averaging':
-            return
+            return 0
         
         tdiv = float(self.inst.query('TDIV?')[5:-2])
         
         min_freq = min(self.master.waveform.freqs)
         min_time = 1/min_freq
-        
+                
         idx = min([i for i, t in enumerate(frame_times) 
                    if 14*t >= min_time]) # 14 tdivs per frame
         
         if frame_times[idx] == tdiv:
-            return
+            return 0
+        
         
         self.inst.write(f'TDIV {tdivs[idx]}')
-        return
+        return frame_times[idx]
         
     
     
@@ -157,7 +158,6 @@ class Oscilloscope():
                      auto_tdiv=True):
         # Record one frame of data.
         # Returns raw voltages
-        
         if not self.inst_check():
             return
         
@@ -165,7 +165,8 @@ class Oscilloscope():
             return
         
         if auto_tdiv:
-            self.autoset_tdiv()
+            timeout += self.autoset_tdiv()
+        print(timeout)
         
         self._is_recording = True
         
