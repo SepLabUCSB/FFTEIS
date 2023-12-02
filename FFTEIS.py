@@ -545,7 +545,7 @@ class GUI():
         self.master.experiment.set_waveform(self.master.waveform)
                
         run(partial(self.master.Oscilloscope.record_duration, t) )
-        mw = MonitorWindow(self.master, self.root)
+        mw = MonitorWindow(self.master, self.root, sensor_names=[''])
         mw.update()
         return
     
@@ -628,6 +628,10 @@ class GUI():
         if len(sensors) != n_sensors:
             print(f'Could not identify {n_sensors} names in input string: {sensors}')
             return
+        for i, s in enumerate(sensors):
+            if s in sensors[i:]:
+                print(f'Duplicate sensor in list: {s}, {sensors}')
+                return
         
         name = tk.simpledialog.askstring('Save As', 'Input save name: ')
         if not name:
@@ -673,6 +677,8 @@ class GUI():
                 i += 1
         
         run(_multiplex)
+        mw = MonitorWindow(self.master, self.root, sensor_names=sensors)
+        mw.update()
 
         return
     

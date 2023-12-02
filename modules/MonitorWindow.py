@@ -24,7 +24,7 @@ class MonitorWindow:
         EEC parameter
         k_et
     '''
-    def __init__(self, master, root):
+    def __init__(self, master, root, sensor_names=list):
         self.master = master
         self.root   = root
         self._closed = False
@@ -32,8 +32,8 @@ class MonitorWindow:
         self.expt = self.master.experiment
         self.last_spectrum = None
         self.last_selection= None
-        self.xdata = []
-        self.ydata = []
+        self.xdata = {sensor_name:[] for sensor_name in sensor_names}
+        self.ydata = {sensor_name:[] for sensor_name in sensor_names}
         
         self.window = Toplevel()
         self.window.protocol('WM_DELETE_WINDOW', self._on_closing)
@@ -64,7 +64,7 @@ class MonitorWindow:
         figframe.grid(row=1, column=0, sticky=(W,E))
         
         self.fig = plt.Figure(figsize=(5,4), dpi=100)
-        self.ax = self.fig.add_subplot(111)
+        self.generate_axes()
         self.canvas = FigureCanvasTkAgg(self.fig, master=figframe)
         self.canvas.get_tk_widget().grid(row=0, column=0)
         
@@ -78,6 +78,23 @@ class MonitorWindow:
         '''
         self._closed = True
         self.window.destroy()
+    
+    
+    def generate_axes(self):
+        self.axes = {}
+        self.lns  = {}
+        keys = list(self.xdata.keys())
+        n_axes = len(keys)
+        if n_axes == 1:
+            n_rows = n_cols = 1
+        else:
+            n_cols = -(-n_axes//2)
+            n_rows = 2
+        
+        for i, key in enumerate(keys):
+            ax = self.fig.add_subplot(n_rows, n_cols, i+1)
+            self.axes[key] = ax
+            self.axes[key].set_title(key)
     
     
     def update(self):
@@ -115,12 +132,13 @@ class MonitorWindow:
         spec      = self.expt.spectra[-1]
         selection = self.display_selection.get()
         option    = self.display_option.get()
-        self.process_spectrum(spec, selection, option)
-        self.redraw()
+        ax_key = [key for key in self.xdata.keys() if key in spec.name][0]
+        self.process_spectrum(ax_key, spec, selection, option)
+        self.redraw(ax_key)
         self.last_spectrum = spec
     
     
-    def process_spectrum(self, spectrum, selection, option):
+    def process_spectrum(self, ax_key, spectrum, selection, option):
         '''
         Extract the requested piece of information out of the spectrum
         
@@ -133,14 +151,14 @@ class MonitorWindow:
         
         # append time to xdata
         t = spectrum.timestamp
-        self.xdata.append(t - self.expt.spectra[0].timestamp)
+        self.xdata[ax_key].append(t - self.expt.spectra[0].timestamp)
                 
         if selection in ('|Z|', 'Phase'):
             idx, _ = nearest(spectrum.freqs, float(option))
             if selection == '|Z|':
-                self.ydata.append(np.absolute(spectrum.Z[idx]))
+                self.ydata[ax_key].append(np.absolute(spectrum.Z[idx]))
             elif selection == 'Phase':
-                self.ydata.append(spectrum.phase[idx])
+                self.ydata[ax_key].append(spectrum.phase[idx])
             return
         
         if selection == 'Parameter':
@@ -148,77 +166,79 @@ class MonitorWindow:
                 val = spectrum.fit[option]
             except:
                 val = 0
-            self.ydata.append(val)
+            self.ydata[ax_key].append(val)
             return
         
         else:
             # TODO: implement once fitting is working
-            self.ydata.append(1)
+            self.ydata[ax_key].append(1)
         return
     
     
-    def redraw(self):
+    def redraw(self, ax_key):
         '''
         Redraw figure with blitting
         '''
-        self.update_axlim() # Check if we need to adjust the axis limits
+        self.update_axlim(ax_key) # Check if we need to adjust the axis limits
         
         self.canvas.restore_region(self.bg)
-        self.ln.set_data(self.xdata, self.ydata)
-        self.ax.draw_artist(self.ln)
+        self.lns[ax_key].set_data(self.xdata[ax_key], self.ydata[ax_key])
+        self.axes[ax_key].draw_artist(self.lns[ax_key])
         self.canvas.blit(self.fig.bbox)
         self.canvas.flush_events()
         
         
-    def update_axlim(self):
+    def update_axlim(self, ax_key):
         '''
         Check if we need to expand the axis limits. If so, redraw the figure
         and save the new background for blitting
         '''
         updated = False
         
-        xlim = self.ax.get_xlim()
-        ylim = self.ax.get_ylim()
+        xlim = self.axes[ax_key].get_xlim()
+        ylim = self.axes[ax_key].get_ylim()
         
         # Check if we need to extend x axis
         xmax = xlim[1]
         xmax_idx, _ = nearest(xmaxes, xmax)
         
-        if self.xdata[-1] > 0.9*xmax:
-            while self.xdata[-1] > 0.9*xmax:
+        if self.xdata[ax_key][-1] > 0.9*xmax:
+            while self.xdata[ax_key][-1] > 0.9*xmax:
                 xmax_idx += 1
                 xmax = xmaxes[xmax_idx]
-            self.ax.set_xlim(0,xmaxes[xmax_idx])
+            self.ax[ax_key].set_xlim(0,xmaxes[xmax_idx])
             updated = True
         
         # Check if we need to zoom out of y axis
-        if ( (min(self.ydata) <= ylim[0]) or 
-             (max(self.ydata) >= ylim[1]) ):
-            yrange = max(self.ydata) - min(self.ydata)
+        if ( (min(self.ydata[ax_key]) <= ylim[0]) or 
+             (max(self.ydata[ax_key]) >= ylim[1]) ):
+            yrange = max(self.ydata[ax_key]) - min(self.ydata[ax_key])
             if yrange == 0:
-                yrange = self.ydata[0]
+                yrange = self.ydata[ax_key][0]
             
-            ymax = max(self.ydata) + 0.3*yrange
-            ymin = min(self.ydata) - 0.3*yrange
+            ymax = max(self.ydata[ax_key]) + 0.3*yrange
+            ymin = min(self.ydata[ax_key]) - 0.3*yrange
             
-            self.ax.set_ylim(ymin, ymax)
+            self.axes[ax_key].set_ylim(ymin, ymax)
             updated = True
         
         # Save new background
         if updated:   
-            self._draw_blit()
+            self._draw_blit(ax_key)
     
         
-    def _draw_blit(self):
+    def _draw_blit(self, ax_key):
         '''
         Draw figure and save its background
         '''
         self.fig.tight_layout()
         self.fig.canvas.draw()
-        self.ln, = self.ax.plot(self.xdata, self.ydata, 'ko-', 
-                                animated=True)
+        ln, = self.axes[ax_key].plot(self.xdata[ax_key], 
+                                      self.ydata[ax_key], 'ko-', 
+                                      animated=True)
+        self.lns[ax_key] = ln
         self.bg = self.canvas.copy_from_bbox(self.fig.bbox)
-        self.ax.draw_artist(self.ln)
+        self.ax.draw_artist(ln)
         self.canvas.blit(self.fig.bbox)
         self.canvas.flush_events()
     
@@ -233,22 +253,30 @@ class MonitorWindow:
         selection = self.display_selection.get()
         option    = self.display_option.get()
         
-        self.xdata = []
-        self.ydata = []
-        self.ax.clear()
+        for key in self.xdata.keys():
+            self.redraw_axes(key, selection, option)
+    
+    
+    def redraw_axes(self, ax_key, selection, option):
+        
+        self.xdata[ax_key] = []
+        self.ydata[ax_key] = []
+        
+        self.axes[ax_key].clear()
         
         for spectrum in self.expt.spectra:
-            
-            self.process_spectrum(spectrum, selection, option)
+            if not ax_key in spectrum.name:
+                continue
+            self.process_spectrum(ax_key, spectrum, selection, option)
             self.last_spectrum = spectrum
         
-        self.ax.set_xlabel('Time/ s')
-        self.ax.set_ylabel(f'{selection} @ {option}')
+        self.axes[ax_key].set_xlabel('Time/ s')
+        self.axes[ax_key].set_ylabel(f'{selection} @ {option}')
         
-        if len(self.xdata) == 0:
-            self._draw_blit()
+        if len(self.xdata[ax_key]) == 0:
+            self._draw_blit(ax_key)
             return
-        self.update_axlim()
+        self.update_axlim(ax_key)
     
 
     def update_option_menu(self):
