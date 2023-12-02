@@ -206,7 +206,7 @@ class MonitorWindow:
             while self.xdata[ax_key][-1] > 0.9*xmax:
                 xmax_idx += 1
                 xmax = xmaxes[xmax_idx]
-            self.ax[ax_key].set_xlim(0,xmaxes[xmax_idx])
+            self.axes[ax_key].set_xlim(0,xmaxes[xmax_idx])
             updated = True
         
         # Check if we need to zoom out of y axis
@@ -238,7 +238,7 @@ class MonitorWindow:
                                       animated=True)
         self.lns[ax_key] = ln
         self.bg = self.canvas.copy_from_bbox(self.fig.bbox)
-        self.ax.draw_artist(ln)
+        self.axes[ax_key].draw_artist(ln)
         self.canvas.blit(self.fig.bbox)
         self.canvas.flush_events()
     
