@@ -42,8 +42,8 @@ class Oscilloscope():
         self.buffer = ADCDataBuffer
         
         self.inst = None
-        # self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDED5R0471::INSTR'   #sepunaru
-        self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDEX5R5381::INSTR' #plaxco
+        self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDED5R0471::INSTR'   #sepunaru
+        # self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDEX5R5381::INSTR' #plaxco
         self._is_recording = False
         
         run(self.initialize)
@@ -209,7 +209,7 @@ class Oscilloscope():
         return volts1, volts2
     
     
-    def record_duration(self, t):
+    def record_duration(self, t, name=None):
         '''
         Record continuously for a given duration t
         '''
@@ -220,7 +220,7 @@ class Oscilloscope():
             if self.master.ABORT:
                 self.master.ABORT = False
                 return
-            self.record_frame()
+            self.record_frame(name=name)
         print('Recording finished!')
         return
     

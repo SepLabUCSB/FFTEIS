@@ -63,7 +63,7 @@ class MonitorWindow:
         figframe = Frame(self.window)
         figframe.grid(row=1, column=0, sticky=(W,E))
         
-        self.fig = plt.Figure(figsize=(5,4), dpi=100)
+        self.fig = plt.Figure(figsize=(5,4), dpi=80)
         self.generate_axes()
         self.canvas = FigureCanvasTkAgg(self.fig, master=figframe)
         self.canvas.get_tk_widget().grid(row=0, column=0)
@@ -90,6 +90,10 @@ class MonitorWindow:
         else:
             n_cols = -(-n_axes//2)
             n_rows = 2
+        
+        fig_width  = 5*n_cols
+        fig_height = 3*n_rows
+        self.fig.set_size_inches(fig_width, fig_height)
         
         for i, key in enumerate(keys):
             ax = self.fig.add_subplot(n_rows, n_cols, i+1)
@@ -132,7 +136,7 @@ class MonitorWindow:
         spec      = self.expt.spectra[-1]
         selection = self.display_selection.get()
         option    = self.display_option.get()
-        ax_key = [key for key in self.xdata.keys() if key in spec.name][0]
+        ax_key = [key for key in self.xdata.keys() if spec.name.startswith(key)][0]
         self.process_spectrum(ax_key, spec, selection, option)
         self.redraw(ax_key)
         self.last_spectrum = spec
@@ -180,12 +184,13 @@ class MonitorWindow:
         Redraw figure with blitting
         '''
         self.update_axlim(ax_key) # Check if we need to adjust the axis limits
+        self._draw_blit(ax_key)
         
-        self.canvas.restore_region(self.bg)
-        self.lns[ax_key].set_data(self.xdata[ax_key], self.ydata[ax_key])
-        self.axes[ax_key].draw_artist(self.lns[ax_key])
-        self.canvas.blit(self.fig.bbox)
-        self.canvas.flush_events()
+        # self.canvas.restore_region(self.bg)
+        # self.lns[ax_key].set_data(self.xdata[ax_key], self.ydata[ax_key])
+        # self.axes[ax_key].draw_artist(self.lns[ax_key])
+        # self.canvas.blit(self.fig.bbox)
+        # self.canvas.flush_events()
         
         
     def update_axlim(self, ax_key):
@@ -237,8 +242,9 @@ class MonitorWindow:
                                       self.ydata[ax_key], 'ko-', 
                                       animated=True)
         self.lns[ax_key] = ln
+        for key, ln in self.lns.items():
+            self.axes[ax_key].draw_artist(ln)
         self.bg = self.canvas.copy_from_bbox(self.fig.bbox)
-        self.axes[ax_key].draw_artist(ln)
         self.canvas.blit(self.fig.bbox)
         self.canvas.flush_events()
     
@@ -270,8 +276,10 @@ class MonitorWindow:
             self.process_spectrum(ax_key, spectrum, selection, option)
             self.last_spectrum = spectrum
         
-        self.axes[ax_key].set_xlabel('Time/ s')
-        self.axes[ax_key].set_ylabel(f'{selection} @ {option}')
+        # self.axes[ax_key].set_xlabel('Time/ s')
+        # self.axes[ax_key].set_ylabel(f'{selection} @ {option}')
+        self.fig.supxlabel('Time/ s')
+        self.fig.supylabel(f'{selection} @ {option}')
         
         if len(self.xdata[ax_key]) == 0:
             self._draw_blit(ax_key)

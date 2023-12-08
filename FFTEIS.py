@@ -544,8 +544,8 @@ class GUI():
         self.master.set_experiment(Experiment(self.master, name=name))
         self.master.experiment.set_waveform(self.master.waveform)
                
-        run(partial(self.master.Oscilloscope.record_duration, t) )
-        mw = MonitorWindow(self.master, self.root, sensor_names=[''])
+        run(partial(self.master.Oscilloscope.record_duration, t, 'Sensor') )
+        mw = MonitorWindow(self.master, self.root, sensor_names=['Sensor'])
         mw.update()
         return
     
@@ -629,7 +629,7 @@ class GUI():
             print(f'Could not identify {n_sensors} names in input string: {sensors}')
             return
         for i, s in enumerate(sensors):
-            if s in sensors[i:]:
+            if s in sensors[i+1:]:
                 print(f'Duplicate sensor in list: {s}, {sensors}')
                 return
         
