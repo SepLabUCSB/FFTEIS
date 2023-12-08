@@ -96,13 +96,12 @@ class Arb():
     '''
     Class to communicate with Rigol DG812 arbitrary waveform generator
     '''
-    def __init__(self, master):
+    def __init__(self, master, ARB_ADDRESS):
         self.willStop = False
         self.master = master
         self.master.register(self)
         
-        # self._name = 'USB0::0x1AB1::0x0643::DG8A232302748::INSTR' #sepunaru
-        self._name = 'USB0::0x1AB1::0x0643::DG8A232202635::INSTR' #plaxco
+        self._name = ARB_ADDRESS
         self.initialize()
         
     
