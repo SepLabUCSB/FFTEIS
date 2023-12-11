@@ -544,8 +544,8 @@ class GUI():
         self.master.set_experiment(Experiment(self.master, name=name))
         self.master.experiment.set_waveform(self.master.waveform)
                
-        run(partial(self.master.Oscilloscope.record_duration, t, 'Sensor') )
-        mw = MonitorWindow(self.master, self.root, sensor_names=['Sensor'])
+        run(partial(self.master.Oscilloscope.record_duration, t, '') )
+        mw = MonitorWindow(self.master, self.root, sensor_names=[''])
         mw.update()
         return
     

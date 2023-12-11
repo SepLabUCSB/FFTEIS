@@ -98,7 +98,6 @@ class MonitorWindow:
         for i, key in enumerate(keys):
             ax = self.fig.add_subplot(n_rows, n_cols, i+1)
             self.axes[key] = ax
-            self.axes[key].set_title(key)
     
     
     def update(self):
@@ -269,6 +268,7 @@ class MonitorWindow:
         self.ydata[ax_key] = []
         
         self.axes[ax_key].clear()
+        self.axes[ax_key].set_title(ax_key)
         
         for spectrum in self.expt.spectra:
             if not ax_key in spectrum.name:
