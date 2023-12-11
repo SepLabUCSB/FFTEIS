@@ -593,7 +593,7 @@ class GUI():
     
     def _record_duration(self, t):
         self.running()
-        self.master.Oscilloscope.record_duration(t)
+        self.master.Oscilloscope.record_duration(t, name='')
         self.idle()
     
     
