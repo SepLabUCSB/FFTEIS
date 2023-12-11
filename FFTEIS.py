@@ -747,6 +747,9 @@ class GUI():
         Use the previous spectrum/ spectra to generate a
         new waveform with "optimized" amplitudes
         '''
+        if self.isRunning():
+            print('Cannot create new waveform while running')
+            return
         spectra = self.master.experiment.spectra
         if len(spectra) == 0:
             print('No previous spectra to create optimized waveform from!')
