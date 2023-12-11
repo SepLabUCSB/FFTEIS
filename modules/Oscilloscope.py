@@ -4,6 +4,7 @@ from array import array
 import numpy as np
 import pyvisa
 
+
 if __name__ == '__main__':
     from Buffer import ADCDataBuffer
     from DataProcessor import DataProcessor
@@ -33,7 +34,7 @@ class Oscilloscope():
     '''
     Class for communicating with an SDS1202X-E oscilloscope
     '''
-    def __init__(self, master, ADCDataBuffer):
+    def __init__(self, master, ADCDataBuffer, OSC_ADDRESS):
         
         self.willStop = False
         self.master = master
@@ -42,8 +43,8 @@ class Oscilloscope():
         self.buffer = ADCDataBuffer
         
         self.inst = None
-        self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDED5R0471::INSTR'   #sepunaru
-        # self._name = 'USB0::0xF4ED::0xEE3A::SDS1EDEX5R5381::INSTR' #plaxco
+
+        self._name = OSC_ADDRESS
         self._is_recording = False
         
         run(self.initialize)
