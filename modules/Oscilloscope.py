@@ -218,6 +218,7 @@ class Oscilloscope():
         st = time.time()
         while time.time() - st < t:
             if self.master.ABORT:
+                print('Stopping recording.')
                 self.master.ABORT = False
                 return
             self.record_frame()

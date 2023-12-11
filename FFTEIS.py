@@ -172,6 +172,7 @@ class GUI():
         self.root = root
         self.params = {}
         self.last_spectrum = None
+        self._running = False
         
         root.title('FFT-EIS Controller')
         root.attributes('-topmost', 1)
@@ -319,6 +320,18 @@ class GUI():
         self.master.ABORT = True
         return
     
+    
+    def running(self):
+        self._running = True
+     
+        
+    def idle(self):
+        self._running = False
+        
+    
+    def isRunning(self):
+        return self._running == True
+    
                                                     
     def update_plot(self):
         '''
@@ -414,6 +427,9 @@ class GUI():
         '''
         Send waveform data to arbitrary waveform generator. 
         '''
+        if self.isRunning():
+            print('Cannot apply new waveform, already running')
+            return
         waveform = self.waveform_selection.get()
         mVpp     = self.amplitude_input.get('1.0', 'end')
         
@@ -436,7 +452,12 @@ class GUI():
         '''
         Do oscilloscope autocentering
         '''
+        if self.isRunning():
+            print('Cannot set up oscilloscope, already running')
+            return
+        self.running()
         self.master.Oscilloscope.autocenter_frames()
+        self.idle()
         return
     
     
@@ -446,6 +467,10 @@ class GUI():
         a known resistance. This can be used to correct for filtering
         artefacts in subsequent experiments.
         '''
+        if self.isRunning():
+            print('Cannot record reference spectrum, already running')
+            return
+        
         if not self.check_dataprocessor():
             return
         
@@ -476,6 +501,8 @@ class GUI():
             print('Invalid resistance entry!')
             return
         
+        self.running()
+        
         self.master.set_experiment(Experiment(self.master, name='reference'))
         self.master.experiment.set_waveform(self.master.waveform)
         
@@ -503,7 +530,8 @@ class GUI():
         df.to_csv(out_file, index=False)        
         
         # Update DataProcessor with new reference
-        self.master.DataProcessor.load_correction_factors()        
+        self.master.DataProcessor.load_correction_factors()      
+        self.idle()
         return
     
     
@@ -511,6 +539,9 @@ class GUI():
         '''
         Record a single impedance spectrum
         '''
+        if self.isRunning():
+            print('Cannot record spectrum, already running')
+            return
         if not self.check_dataprocessor():
             return
         if not self.check_fitter():
@@ -519,7 +550,14 @@ class GUI():
         self.master.set_experiment(Experiment(self.master))
         self.master.experiment.set_waveform(self.master.waveform)      
         
-        run(self.master.Oscilloscope.record_frame)
+        run(self._record_single)
+        return
+    
+    
+    def _record_single(self):
+        self.running()
+        self.master.Oscilloscope.record_frame()
+        self.idle()
         return
     
     
@@ -527,6 +565,9 @@ class GUI():
         '''
         Record for a user-inputted duration
         '''
+        if self.isRunning():
+            print('Cannot record, already running')
+            return
         if not self.check_dataprocessor():
             return
 
@@ -544,10 +585,16 @@ class GUI():
         self.master.set_experiment(Experiment(self.master, name=name))
         self.master.experiment.set_waveform(self.master.waveform)
                
-        run(partial(self.master.Oscilloscope.record_duration, t) )
+        run(partial(self._record_duration, t) )
         mw = MonitorWindow(self.master, self.root, sensor_names=[''])
         mw.update()
         return
+    
+    
+    def _record_duration(self, t):
+        self.running()
+        self.master.Oscilloscope.record_duration(t)
+        self.idle()
     
     
     def save_last_as(self):
@@ -565,6 +612,7 @@ class GUI():
             temp_expt.append_spectrum(spectrum)
         return
     
+    
     def multiplex_titration(self):
         '''
         Titration-style multiplexing:
@@ -578,6 +626,9 @@ class GUI():
             5. Repeat recording, averaging, saving for each sensor.
             6. Prompt the user for the next concentration
         '''
+        if self.isRunning():
+            print('Cannot record, already running')
+            return
         if not self.check_dataprocessor():
             return
         if not self.check_fitter():
@@ -599,6 +650,7 @@ class GUI():
         # Get user inputs
         ready = multiplexer.prompts()
         if ready:
+            self.running()
             multiplexer.check_action()
         
 
@@ -610,6 +662,10 @@ class GUI():
         Timing is dictated by Autolab creating designated update file,
         which triggers scope recording here
         '''
+        if self.isRunning():
+            print('Cannot record, already running')
+            return
+        
         if not self.check_dataprocessor():
             return
         
@@ -652,10 +708,12 @@ class GUI():
         def _multiplex():
             st = time.time()
             i = 0
+            self.running()
             while time.time() - st < t:
                 if self.master.ABORT:
                     print('Stopping multiplex experiment')
                     self.master.ABORT = False
+                    self.idle()
                     return
                 
                 # Wait for NOVA to create trigger file indicating new electrode
@@ -675,6 +733,7 @@ class GUI():
                 os.remove(update_file)
                 
                 i += 1
+            self.idle()
         
         run(_multiplex)
         mw = MonitorWindow(self.master, self.root, sensor_names=sensors)
