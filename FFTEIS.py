@@ -154,6 +154,11 @@ class PrintLogger():
         self.textbox = textbox # tk.Text object
 
     def write(self, text):
+        if text in ('\n', ''):
+            return
+        t   = datetime.now()
+        prnt_time = t.strftime('%H:%M:%S')
+        text = f'{prnt_time} | {text}'
         self.textbox.insert(END, text) # write text to textbox
         self.textbox.see('end') # scroll to end
 
@@ -200,7 +205,7 @@ class GUI():
         # Bottom right: console
         botright    = Frame(self.root)
         botright.grid(row=1, column=1, sticky=(N,S))
-        console = Text(botright, width=50, height=25)
+        console = Text(botright, width=60, height=25)
         console.grid(row=0, column=0, sticky=(N,S,E,W))
         pl = PrintLogger(console)
         sys.stdout = pl
