@@ -73,11 +73,13 @@ class TitrationMultiplexer:
         
         if self.master.ABORT:
             run(self.master.make_ready)
+            self.master.GUI.idle()
             return
         
         if self.needs_new_conc():
             r = self.prompt_conc()
             if not r:
+                self.master.GUI.idle()
                 return
             
         if self.recording_finished():
