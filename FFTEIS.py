@@ -45,11 +45,11 @@ plt.style.use(os.path.join(this_dir, 'ffteis.mplstyle'))
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 
-ARB_ADDRESS = 'USB0::0x1AB1::0x0643::DG8A232302748::INSTR'   # Sepunaru
-OSC_ADDRESS = 'USB0::0xF4ED::0xEE3A::SDS1EDED5R0471::INSTR'  # Sepunaru
+# ARB_ADDRESS = 'USB0::0x1AB1::0x0643::DG8A232302748::INSTR'   # Sepunaru
+# OSC_ADDRESS = 'USB0::0xF4ED::0xEE3A::SDS1EDED5R0471::INSTR'  # Sepunaru
 
-# ARB_ADDRESS = 'USB0::0x1AB1::0x0643::DG8A232202635::INSTR'   # Plaxco
-# OSC_ADDRESS = 'USB0::0xF4ED::0xEE3A::SDS1EDEX5R5381::INSTR'  # Plaxco
+ARB_ADDRESS = 'USB0::0x1AB1::0x0643::DG8A232202635::INSTR'   # Plaxco
+OSC_ADDRESS = 'USB0::0xF4ED::0xEE3A::SDS1EDEX5R5381::INSTR'  # Plaxco
 
 
 '''  
