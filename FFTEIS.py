@@ -156,6 +156,7 @@ class PrintLogger():
     def write(self, text):
         if text in ('\n', ''):
             return
+        text = text.rstrip('\n') + '\n'
         t   = datetime.now()
         prnt_time = t.strftime('%H:%M:%S')
         text = f'{prnt_time} | {text}'

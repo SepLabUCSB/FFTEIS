@@ -7,7 +7,6 @@ from functools import partial
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.widgets import Button
 
 from .funcs import nearest
 from .Fitter import circuit_params
@@ -15,21 +14,6 @@ from .Fitter import circuit_params
 
 plot_options = ['|Z|', 'Phase', 'Parameter', 'k']
 xmaxes = [30, 60, 120, 300, 600, 1200] + [1800*i for i in range(1,200)]
-
-
-
-
-def place_buttons(fig, ax):    
-    bbox = ax.get_position()
-    left, bottom, top = bbox.xmin, bbox.ymin, bbox.ymax
-    
-    bottom_ax = fig.add_axes((left, bottom, 0.03, 0.04))
-    top_ax    = fig.add_axes((left, top-0.04, 0.03, 0.04))
-    
-    zoom_out_button = Button(bottom_ax, '-')
-    zoom_in_button  = Button(top_ax, '+')
-    return (zoom_in_button, zoom_out_button)
-
 
 
 class MonitorWindow:
@@ -77,6 +61,20 @@ class MonitorWindow:
         self.display_option_menu.grid(row=0, column=2, sticky=(W,E))
         self.update_option_menu()
         
+        Label(toprow, text='     ').grid(row=0, column=3, sticky=(W,E))
+        
+        self.ax_selection_option = StringVar()
+        self.ax_selection_option_menu = OptionMenu(toprow, self.ax_selection_option,
+                                                   '', *[''])
+        self.ax_selection_option_menu.grid(row=0, column=4, sticky=(W,E))
+        
+        
+        Button(toprow, text='Zoom in', command=self.zoom_in).grid(
+            row=0, column=5, sticky=(W,E))
+        Button(toprow, text='Zoom out', command=self.zoom_out).grid(
+            row=0, column=6, sticky=(W,E))
+        
+        
         figframe = Frame(self.window)
         figframe.grid(row=1, column=0, sticky=(W,E))
         
@@ -116,13 +114,13 @@ class MonitorWindow:
         for i, key in enumerate(keys):
             ax = self.fig.add_subplot(n_rows, n_cols, i+1)
             self.axes[key] = ax
-            
-        # Generate zoom in/out buttons on each axes
-        for ax_key, ax in self.axes.items():
-            zoom_in, zoom_out = place_buttons(self.fig, ax)
-            zoom_in.on_clicked(partial(self.zoom_in, ax_key))
-            zoom_out.on_clicked(partial(self.zoom_out, ax_key))
-            self.axes[ax_key].y_lim_forced = False
+        
+        self.fig.supxlabel('Time/ s')
+        self.fig.supylabel('{selection} @ {option}')
+        self.fig.tight_layout()
+        
+        self.ax_selection_option_menu.set_menu(keys[0], *keys)
+        
             
                 
     def update(self):
@@ -198,16 +196,24 @@ class MonitorWindow:
             self.ydata[ax_key].append(val)
             return
         
+        if selection == 'k':
+            if ('Rct' in spectrum.fit) and ('Cads' in spectrum.fit):
+                val = 1/(2*spectrum.fit['Rct']*spectrum.fit['Cads'])
+            else:
+                val= 0
+            self.ydata[ax_key].append(val)
+        
         else:
             # TODO: implement once fitting is working
             self.ydata[ax_key].append(1)
         return
             
     
-    def zoom_in(self, ax_key, event):
+    def zoom_in(self):
         '''
         Zoom in y axis on given axes
         '''
+        ax_key = self.ax_selection_option.get()
         self.axes[ax_key].y_lim_forced = True
         ymin, ymax = self.axes[ax_key].get_ylim()
         
@@ -215,13 +221,15 @@ class MonitorWindow:
         
         self.axes[ax_key].set_ylim(ymin + 0.1*delta,
                                    ymax - 0.1*delta)
+        self._draw_blit(ax_key)
         return
         
     
-    def zoom_out(self, ax_key, event):
+    def zoom_out(self):
         '''
         Zoom out y axis on given axes
         '''
+        ax_key = self.ax_selection_option.get()
         self.axes[ax_key].y_lim_forced = True
         ymin, ymax = self.axes[ax_key].get_ylim()
         
@@ -229,6 +237,7 @@ class MonitorWindow:
         
         self.axes[ax_key].set_ylim(ymin - 0.1*delta,
                                    ymax + 0.1*delta)
+        self._draw_blit(ax_key)
         return
         
         
@@ -277,14 +286,17 @@ class MonitorWindow:
         '''
         Draw figure and save its background
         '''
-        # self.fig.tight_layout()
+        self.fig.tight_layout()
         self.fig.canvas.draw()
-        if ax_key in self.lns:
-            self.lns[ax_key].remove()
-        ln, = self.axes[ax_key].plot(self.xdata[ax_key], 
+        if ax_key not in self.lns:
+            ln, = self.axes[ax_key].plot(self.xdata[ax_key], 
                                       self.ydata[ax_key], 'ko-', 
                                       animated=True)
-        self.lns[ax_key] = ln
+            self.lns[ax_key] = ln
+        else:
+            self.lns[ax_key].set_data(self.xdata[ax_key], 
+                                      self.ydata[ax_key])
+        
         for key, ln in self.lns.items():
             self.axes[ax_key].draw_artist(ln)
         self.bg = self.canvas.copy_from_bbox(self.fig.bbox)
