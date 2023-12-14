@@ -3,9 +3,11 @@ from tkinter.ttk import *
 import tkinter as tk
 import numpy as np
 import time
+from functools import partial
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.widgets import Button
 
 from .funcs import nearest
 from .Fitter import circuit_params
@@ -13,6 +15,21 @@ from .Fitter import circuit_params
 
 plot_options = ['|Z|', 'Phase', 'Parameter', 'k']
 xmaxes = [30, 60, 120, 300, 600, 1200] + [1800*i for i in range(1,200)]
+
+
+
+
+def place_buttons(fig, ax):    
+    bbox = ax.get_position()
+    left, bottom, top = bbox.xmin, bbox.ymin, bbox.ymax
+    
+    bottom_ax = fig.add_axes((left, bottom, 0.03, 0.04))
+    top_ax    = fig.add_axes((left, top-0.04, 0.03, 0.04))
+    
+    zoom_out_button = Button(bottom_ax, '-')
+    zoom_in_button  = Button(top_ax, '+')
+    return (zoom_in_button, zoom_out_button)
+
 
 
 class MonitorWindow:
@@ -95,11 +112,19 @@ class MonitorWindow:
         fig_height = 3*n_rows
         self.fig.set_size_inches(fig_width, fig_height)
         
+        # Generate the axes
         for i, key in enumerate(keys):
             ax = self.fig.add_subplot(n_rows, n_cols, i+1)
             self.axes[key] = ax
-    
-    
+            
+        # Generate zoom in/out buttons on each axes
+        for ax_key, ax in self.axes.items():
+            zoom_in, zoom_out = place_buttons(self.fig, ax)
+            zoom_in.on_clicked(partial(self.zoom_in, ax_key))
+            zoom_out.on_clicked(partial(self.zoom_out, ax_key))
+            self.axes[ax_key].y_lim_forced = False
+            
+                
     def update(self):
         '''
         Called periodically by Tk root. Check if new data should be plotted
@@ -137,7 +162,8 @@ class MonitorWindow:
         option    = self.display_option.get()
         ax_key = [key for key in self.xdata.keys() if spec.name.startswith(key)][0]
         self.process_spectrum(ax_key, spec, selection, option)
-        self.redraw(ax_key)
+        self.update_axlim(ax_key) # Check if we need to adjust the axis limits
+        self._draw_blit(ax_key)
         self.last_spectrum = spec
     
     
@@ -176,20 +202,34 @@ class MonitorWindow:
             # TODO: implement once fitting is working
             self.ydata[ax_key].append(1)
         return
+            
     
-    
-    def redraw(self, ax_key):
+    def zoom_in(self, ax_key, event):
         '''
-        Redraw figure with blitting
+        Zoom in y axis on given axes
         '''
-        self.update_axlim(ax_key) # Check if we need to adjust the axis limits
-        self._draw_blit(ax_key)
+        self.axes[ax_key].y_lim_forced = True
+        ymin, ymax = self.axes[ax_key].get_ylim()
         
-        # self.canvas.restore_region(self.bg)
-        # self.lns[ax_key].set_data(self.xdata[ax_key], self.ydata[ax_key])
-        # self.axes[ax_key].draw_artist(self.lns[ax_key])
-        # self.canvas.blit(self.fig.bbox)
-        # self.canvas.flush_events()
+        delta = ymax - ymin
+        
+        self.axes[ax_key].set_ylim(ymin + 0.1*delta,
+                                   ymax - 0.1*delta)
+        return
+        
+    
+    def zoom_out(self, ax_key, event):
+        '''
+        Zoom out y axis on given axes
+        '''
+        self.axes[ax_key].y_lim_forced = True
+        ymin, ymax = self.axes[ax_key].get_ylim()
+        
+        delta = ymax - ymin
+        
+        self.axes[ax_key].set_ylim(ymin - 0.1*delta,
+                                   ymax + 0.1*delta)
+        return
         
         
     def update_axlim(self, ax_key):
@@ -214,8 +254,10 @@ class MonitorWindow:
             updated = True
         
         # Check if we need to zoom out of y axis
-        if ( (min(self.ydata[ax_key]) <= ylim[0]) or 
-             (max(self.ydata[ax_key]) >= ylim[1]) ):
+        if (not self.axes[ax_key].y_lim_forced) and ( 
+                (min(self.ydata[ax_key]) <= ylim[0]) or 
+                (max(self.ydata[ax_key]) >= ylim[1]) 
+                ):
             yrange = max(self.ydata[ax_key]) - min(self.ydata[ax_key])
             if yrange == 0:
                 yrange = self.ydata[ax_key][0]
@@ -235,8 +277,10 @@ class MonitorWindow:
         '''
         Draw figure and save its background
         '''
-        self.fig.tight_layout()
+        # self.fig.tight_layout()
         self.fig.canvas.draw()
+        if ax_key in self.lns:
+            self.lns[ax_key].remove()
         ln, = self.axes[ax_key].plot(self.xdata[ax_key], 
                                       self.ydata[ax_key], 'ko-', 
                                       animated=True)
@@ -269,6 +313,7 @@ class MonitorWindow:
         
         self.axes[ax_key].clear()
         self.axes[ax_key].set_title(ax_key)
+        self.axes[ax_key].y_lim_forced = False
         
         for spectrum in self.expt.spectra:
             if not ax_key in spectrum.name:
