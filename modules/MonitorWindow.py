@@ -197,9 +197,9 @@ class MonitorWindow:
             return
         
         if selection == 'k':
-            if ('Rct' in spectrum.fit) and ('Cads' in spectrum.fit):
+            try:
                 val = 1/(2*spectrum.fit['Rct']*spectrum.fit['Cads'])
-            else:
+            except:
                 val= 0
             self.ydata[ax_key].append(val)
         
