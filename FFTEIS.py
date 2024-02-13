@@ -266,6 +266,8 @@ class GUI():
         Button(topleft, text='Multiplex in-vivo', command=self.multiplex_invivo).grid(
             column=2, row=4, sticky=(E,W))
         
+        Button(topleft, text='Test', command=self.test_button).grid(
+            column=1, row=5, sticky=(W,E))
         
         
         ### TOP RIGHT: Input fields ###
@@ -455,7 +457,7 @@ class GUI():
         wf = Waveform()
         wf.from_csv(waveform_file)
         
-        self.master.Arb.send_waveform(wf, Vpp)
+        # self.master.Arb.send_waveform(wf, Vpp)
         self.master.waveform = wf
         self.master.DataProcessor.load_correction_factors()
         return
@@ -874,8 +876,36 @@ class GUI():
             print('Please apply a waveform before recording data!')
             return 0
         return 1
+    
+    
+    def test_button(self):
+        self.check_fitter()
+        run(self._test)
+        # mw = MonitorWindow(self.master, self.root, sensor_names=[''])
+        # mw.update()
         
-                
+    def _test(self):
+        folder = r'C:\Users\BRoehrich\Desktop\Data in vivo lactate EAB\Part 1'
+        t0 = time.time()
+        for file in os.listdir(folder):
+            if self.master.ABORT:
+                return
+            if file.startswith('!'):
+                continue
+            if not file.endswith('.txt'):
+                continue
+            file = os.path.join(folder, file)
+            print(file)
+            f, re, im = np.loadtxt(file, skiprows=1, unpack=True)
+            self.master.DataProcessor.make_spectrum(timestamp=time.time()-t0,
+                                                    freqs=f,
+                                                    Z=re+1j*im,
+                                                    name='')
+            time.sleep(1.5)
+        
+        
+    
+          
 
     
     

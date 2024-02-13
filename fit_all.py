@@ -13,7 +13,7 @@ import matplotlib
 from modules.Fitter import predict_circuit, Fitter
 
 plt.style.use('ffteis.mplstyle')
-matplotlib.use('Qt5Agg')
+# matplotlib.use('Qt5Agg')
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 
@@ -74,6 +74,8 @@ def fit_all(ax, folder, sequential_fits:bool, plot_every:int, fitter):
     # Get number of sensors in this experiment
     sensors = list()
     for file in os.listdir(folder):
+        if file.endswith('.xlsx'):
+            continue
         ln = open(os.path.join(folder, file), 'r').readline()
         if not ln.startswith('<Frequency>'):
             continue
@@ -88,6 +90,8 @@ def fit_all(ax, folder, sequential_fits:bool, plot_every:int, fitter):
     fits = None
     plt.pause(0.2)
     for file in os.listdir(folder):
+        if file.endswith('.xlsx'):
+            continue
         ln = open(os.path.join(folder, file), 'r').readline()
         if not ln.startswith('<Frequency>'):
             continue
