@@ -13,7 +13,7 @@ import matplotlib
 from modules.Fitter import predict_circuit, Fitter
 
 plt.style.use('ffteis.mplstyle')
-matplotlib.use('Qt5Agg')
+# matplotlib.use('Qt5Agg')
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 
@@ -74,6 +74,8 @@ def fit_all(ax, folder, sequential_fits:bool, plot_every:int, fitter):
     # Get number of sensors in this experiment
     sensors = list()
     for file in os.listdir(folder):
+        if file.endswith('.xlsx'):
+            continue
         ln = open(os.path.join(folder, file), 'r').readline()
         if not ln.startswith('<Frequency>'):
             continue
@@ -88,6 +90,8 @@ def fit_all(ax, folder, sequential_fits:bool, plot_every:int, fitter):
     fits = None
     plt.pause(0.2)
     for file in os.listdir(folder):
+        if file.endswith('.xlsx'):
+            continue
         ln = open(os.path.join(folder, file), 'r').readline()
         if not ln.startswith('<Frequency>'):
             continue
@@ -105,7 +109,13 @@ def fit_all(ax, folder, sequential_fits:bool, plot_every:int, fitter):
         
         # Do fitting
         fits = fitter.fit(spec, initial_guess) 
-        print(f'{file}: {fits}')
+        
+        ket = 1/(2*fits['Rct']*fits['Cads'])
+        prntln = f'{file}: '
+        for key,val in fits.items():
+            prntln += f' {key}:' + f'{val:0.2e},'.rjust(6, ' ')
+        prntln += f' ket:{ket:0.2f}'
+        print(prntln)        
         
         # Find the correct time
         if '_' in file:
@@ -127,11 +137,12 @@ def fit_all(ax, folder, sequential_fits:bool, plot_every:int, fitter):
         with open(fits_file, 'a') as f:
             if i == 0:
                 header_line = ','.join(key for key in fits.keys())
-                header_line = 'file,time,' + header_line
+                header_line = 'file,time,' + header_line + ',ket'
                 f.write(header_line + '\n')
             line = ','.join(str(val) for val in fits.values())
-            line = f'{file},{t},' + line
+            line = f'{file},{t},' + line + f',{ket}'
             f.write(line + '\n')
+        
             
         # Draw on plot
         if plot_every == 0:
